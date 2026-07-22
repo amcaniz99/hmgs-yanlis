@@ -160,17 +160,45 @@ a{color:var(--primary); font-weight:600; word-break:break-all}
 .ozet-kutu{flex:1; background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:10px 6px; text-align:center; box-shadow:var(--golge)}
 .ozet-kutu .sayi{display:block; font-size:20px; font-weight:800; color:var(--primary)}
 .ozet-kutu .ad{display:block; font-size:11px; color:var(--muted); font-weight:600}
-#gunluk-grafik{
-  display:flex; align-items:flex-end; gap:4px;
-  background:var(--surface); border:1px solid var(--border); border-radius:12px;
-  padding:12px 10px 8px; height:150px; box-shadow:var(--golge);
+.grafik-kart{background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:14px 14px 10px; box-shadow:var(--golge)}
+.grafik-ust{display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap; margin-bottom:14px}
+.grafik-baslik{font-size:13px; font-weight:700; color:var(--muted)}
+.chipler{display:flex; gap:6px; flex-wrap:wrap}
+.chip{font-size:11.5px; font-weight:700; border-radius:999px; padding:3px 10px; background:var(--primary-soft); color:var(--primary); white-space:nowrap}
+.chip.iyi{background:rgba(5,150,105,.13); color:var(--iyi)}
+.chip.kotu{background:var(--vurgu-soft); color:var(--vurgu)}
+.grafik-govde{position:relative; height:150px; margin-top:6px}
+.grid-cizgi{position:absolute; left:0; right:0; border-top:1px solid var(--border); opacity:.65; pointer-events:none}
+.grid-etiket{position:absolute; right:0; font-size:9px; font-weight:600; color:var(--muted); background:var(--surface); padding:0 3px; transform:translateY(-55%); pointer-events:none}
+.ort-cizgi{position:absolute; left:0; right:26px; border-top:1.5px dashed var(--primary); opacity:.55; pointer-events:none}
+.ort-etiket{position:absolute; right:0; font-size:9.5px; font-weight:700; color:var(--primary); background:var(--primary-soft); padding:1px 5px; border-radius:5px; transform:translateY(-50%); pointer-events:none}
+.gun-bar-alani{position:absolute; inset:0; display:flex; align-items:flex-end; gap:3px}
+.gun-sutun{
+  position:relative; flex:1; min-width:0; height:100%; padding:0;
+  background:none; border:none; color:inherit; cursor:pointer;
 }
-#gunluk-grafik.dar{gap:2px}
-.gun-sutun{flex:1; min-width:0; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; gap:3px; height:100%}
-.gun-sutun .cubuk{width:100%; max-width:34px; background:var(--primary); border-radius:4px 4px 0 0}
-.gun-sutun.bugun .cubuk{background:var(--vurgu)}
-.gun-sutun .deger{font-size:10.5px; font-weight:700; color:var(--muted); min-height:14px}
-.gun-sutun .etiket{font-size:9px; color:var(--muted); white-space:nowrap; min-height:11px}
+.gun-sutun .cubuk{
+  position:absolute; bottom:0; left:50%; transform:translateX(-50%);
+  width:100%; max-width:26px; background:var(--primary); opacity:.45;
+  border-radius:4px 4px 0 0; transform-origin:bottom; animation:cubukBuyu .35s ease-out;
+}
+.gun-sutun.bugun .cubuk{background:var(--grad); opacity:1}
+.gun-sutun.bos .cubuk{opacity:.12; border-radius:2px}
+.gun-sutun .deger{
+  position:absolute; left:50%; transform:translateX(-50%);
+  font-size:10.5px; font-weight:800; color:var(--primary); line-height:1;
+}
+.gun-sutun.bugun .deger{color:var(--text)}
+.gun-sutun .deger.icte{color:#fff}
+@media (prefers-color-scheme: dark){ .gun-sutun .deger.icte{color:#141020} }
+@keyframes cubukBuyu{from{transform:translateX(-50%) scaleY(0)}}
+.gun-etiketler{display:flex; gap:3px; margin-top:5px}
+.gun-etiketler span{flex:1; min-width:0; text-align:center; font-size:9px; color:var(--muted); white-space:nowrap; overflow:visible}
+.grafik-ipucu{
+  position:absolute; z-index:5; background:var(--text); color:var(--bg);
+  font-size:11.5px; font-weight:600; padding:5px 9px; border-radius:8px;
+  white-space:nowrap; pointer-events:none;
+}
 .deneme-satir{background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:11px 12px; margin-bottom:8px; box-shadow:var(--golge)}
 .deneme-satir .ust{display:flex; align-items:center; justify-content:space-between; gap:8px; font-size:14px; font-weight:600}
 .deneme-satir .alt-bilgi{font-size:12.5px; color:var(--muted); margin-top:2px}
@@ -1113,36 +1141,93 @@ function renderGunluk(){
   const kutu = $('#gunluk-grafik');
   const v = $('#analiz-aralik').value || '*';
   const gunSayisi = v === '*' ? 30 : Math.max(7, Number(v));   // 7 / 14 / 30 günlük bar
-  const bugun = new Date();
-  bugun.setHours(0, 0, 0, 0);
+  const bugun0 = new Date();
+  bugun0.setHours(0, 0, 0, 0);
   const gunler = [];
   for (let i = gunSayisi - 1; i >= 0; i--) {
-    const d = new Date(bugun);
+    const d = new Date(bugun0);
     d.setDate(d.getDate() - i);
     gunler.push({ bas: d, sayi: 0 });
   }
+  // bu pencere + karşılaştırma için bir önceki eşit pencere
+  const oncekiBas = new Date(gunler[0].bas);
+  oncekiBas.setDate(oncekiBas.getDate() - gunSayisi);
+  let oncekiToplam = 0;
   for (const k of kayitlar) {
     const d = new Date(k.tarih);
     if (isNaN(d)) continue;
     const g = new Date(d.getFullYear(), d.getMonth(), d.getDate());
     const fark = Math.round((g - gunler[0].bas) / 86400000);
-    if (fark >= 0 && fark < gunler.length) gunler[fark].sayi++;
+    if (fark >= 0 && fark < gunSayisi) gunler[fark].sayi++;
+    else if (fark < 0 && g >= oncekiBas) oncekiToplam++;
+  }
+  const toplam = gunler.reduce((t, g) => t + g.sayi, 0);
+  if (!toplam && !oncekiToplam) {
+    kutu.innerHTML = '<div class="bos-durum">Bu dönemde grafik için veri yok.</div>';
+    return;
   }
   const maks = Math.max(1, ...gunler.map(g => g.sayi));
+  const tavanlar = [2, 4, 6, 8, 10, 12, 16, 20, 24, 30, 40, 50, 60, 80, 100, 140, 200];
+  const tavan = tavanlar.find(x => x >= maks) || Math.ceil(maks / 100) * 100;
+  const ort = toplam / gunSayisi;
+  // trend rozeti: önceki eşit döneme göre değişim
+  let trendHTML = '';
+  if (oncekiToplam > 0) {
+    const oran = Math.round((toplam - oncekiToplam) / oncekiToplam * 100);
+    if (oran <= -10) trendHTML = `<span class="chip iyi">↓ %${Math.abs(oran)} azaldı</span>`;
+    else if (oran >= 10) trendHTML = `<span class="chip kotu">↑ %${oran} arttı</span>`;
+    else trendHTML = `<span class="chip">≈ önceki dönemle aynı</span>`;
+  }
+  const enCokIdx = gunler.reduce((en, g, i) => g.sayi > gunler[en].sayi ? i : en, 0);
   const etiketAdim = gunSayisi > 21 ? 5 : (gunSayisi > 10 ? 2 : 1);
-  kutu.classList.toggle('dar', gunSayisi > 21);
-  kutu.innerHTML = gunler.map((g, i) => {
-    const yukseklik = Math.max(2, Math.round(g.sayi / maks * 70));
-    const son = i === gunler.length - 1;
-    const etiket = (i % etiketAdim === 0 || son)
-      ? g.bas.getDate() + '.' + String(g.bas.getMonth() + 1).padStart(2, '0') : '';
-    const deger = (gunSayisi <= 14 && g.sayi) ? g.sayi : '';
-    return `<div class="gun-sutun${son ? ' bugun' : ''}" title="${tarihYaz(g.bas.toISOString())} — ${g.sayi} yanlış">
-      <span class="deger">${deger}</span>
+  const barlar = gunler.map((g, i) => {
+    const son = i === gunSayisi - 1;
+    const yukseklik = g.sayi ? Math.max(3, Math.round(g.sayi / tavan * 100)) : 1.5;
+    const degerGoster = g.sayi && (son || i === enCokIdx);
+    return `<button type="button" class="gun-sutun${son ? ' bugun' : ''}${g.sayi ? '' : ' bos'}" data-i="${i}"
+      aria-label="${tarihYaz(g.bas.toISOString())}: ${g.sayi} yanlış">
+      ${degerGoster ? `<span class="deger${yukseklik >= 78 ? ' icte' : ''}" style="bottom:${yukseklik >= 78 ? yukseklik - 12 : Math.min(88, yukseklik + 4)}%">${g.sayi}</span>` : ''}
       <div class="cubuk" style="height:${yukseklik}%"></div>
-      <span class="etiket">${etiket}</span>
-    </div>`;
+    </button>`;
   }).join('');
+  const etiketler = gunler.map((g, i) => {
+    const son = i === gunSayisi - 1;
+    let et = '';
+    if (i % etiketAdim === 0 || son) {
+      et = son ? 'bugün' : String(g.bas.getDate());
+      if (!son && (i === 0 || g.bas.getDate() <= etiketAdim)) et = g.bas.getDate() + '.' + (g.bas.getMonth() + 1);
+    }
+    return `<span>${et}</span>`;
+  }).join('');
+  const ortKonum = Math.min(96, ort / tavan * 100);
+  kutu.innerHTML = `<div class="grafik-kart">
+    <div class="grafik-ust">
+      <span class="grafik-baslik">Günlük yanlış sayısı</span>
+      <span class="chipler"><span class="chip">ort ${ort.toLocaleString('tr-TR', { maximumFractionDigits: 1 })}/gün</span>${trendHTML}</span>
+    </div>
+    <div class="grafik-govde">
+      <div class="grid-cizgi" style="top:0"></div><span class="grid-etiket" style="top:0">${tavan}</span>
+      <div class="grid-cizgi" style="top:50%"></div><span class="grid-etiket" style="top:50%">${tavan / 2}</span>
+      <div class="ort-cizgi" style="bottom:${ortKonum}%"></div><span class="ort-etiket" style="bottom:${ortKonum}%">ort</span>
+      <div class="gun-bar-alani">${barlar}</div>
+      <div class="grafik-ipucu" id="grafik-ipucu" hidden></div>
+    </div>
+    <div class="gun-etiketler">${etiketler}</div>
+  </div>`;
+  // dokununca bilgi balonu
+  const ipucu = $('#grafik-ipucu');
+  kutu.querySelectorAll('.gun-sutun').forEach(b => {
+    b.addEventListener('click', () => {
+      const i = Number(b.dataset.i), g = gunler[i];
+      if (!ipucu.hidden && ipucu.dataset.i === String(i)) { ipucu.hidden = true; return; }
+      ipucu.dataset.i = String(i);
+      ipucu.textContent = tarihYaz(g.bas.toISOString()) + ' — ' + g.sayi + ' yanlış';
+      ipucu.style.left = ((i + 0.5) / gunSayisi * 100) + '%';
+      ipucu.style.bottom = Math.min(82, (g.sayi / tavan * 100) + 8) + '%';
+      ipucu.style.transform = i < 2 ? 'translateX(-12%)' : (i > gunSayisi - 3 ? 'translateX(-88%)' : 'translateX(-50%)');
+      ipucu.hidden = false;
+    });
+  });
 }
 
 function renderDenemeOzet(){
@@ -1515,10 +1600,17 @@ async function senkronla(manuel){
     const yanit = await fetch(API_YOLU + '?kullanici=' + u, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ kayitlar: meta })
+      body: JSON.stringify({
+        kayitlar: meta,
+        ayarlar: aiAnahtar() ? { aiAnahtar: aiAnahtar() } : {}
+      })
     });
     if (!yanit.ok) throw new Error('sunucu hatası (' + yanit.status + ')');
     const birlesik = await yanit.json();
+    // AI anahtarı hesapla birlikte gezsin: bulutta varsa ve bu cihazda yoksa al
+    if (birlesik.ayarlar && birlesik.ayarlar.aiAnahtar && !aiAnahtar()) {
+      try { localStorage.setItem(AI_ANAHTAR_ADI, birlesik.ayarlar.aiAnahtar); } catch (e) {}
+    }
     // 3) sunucudan gelen daha yeni kayıtları yerele indir
     const yerel = new Map(tumu.map(k => [k.uid, k]));
     let degisti = false;
@@ -1599,6 +1691,7 @@ function olaylariBagla(){
       else { localStorage.removeItem(AI_ANAHTAR_ADI); toast('Anahtar silindi'); }
     } catch (e) { toast('Anahtar kaydedilemedi'); }
     renderYedekBilgi();
+    senkronTetikle();   // anahtar hesapla birlikte diğer cihazlara da gitsin
   });
   $('#duzenle-vazgec').addEventListener('click', () => { formuSifirla(false); toast('Düzenleme iptal edildi'); });
 

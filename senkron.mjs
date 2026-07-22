@@ -60,7 +60,14 @@ export default async (req) => {
       const mevcut = birlesim.get(k.uid);
       if (!mevcut || (k.guncelleme || '') > (mevcut.guncelleme || '')) birlesim.set(k.uid, k);
     }
-    const sonuc = { kayitlar: [...birlesim.values()] };
+    // hesap ayarları (örn. AI anahtarı): sadece dolu gelen alanlar üzerine yazar
+    const ayarlar = Object.assign({}, eski.ayarlar || {});
+    if (gelen.ayarlar && typeof gelen.ayarlar === 'object') {
+      for (const [alan, deger] of Object.entries(gelen.ayarlar)) {
+        if (deger) ayarlar[alan] = deger;
+      }
+    }
+    const sonuc = { kayitlar: [...birlesim.values()], ayarlar };
     await store.set(metaAnahtar, JSON.stringify(sonuc));
     return Response.json(sonuc);
   }
