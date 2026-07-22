@@ -3,7 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#6d28d9">
+<meta name="theme-color" content="#6d28d9" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1e1930" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="HMGS">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="manifest" href="manifest.webmanifest">
 <title>HMGS Yanlış Takip</title>
 <style>
 :root{
@@ -11,6 +18,7 @@
   --border:#e5e0f0; --primary:#6d28d9; --primary-koyu:#5b21b6; --primary-soft:#efe9fb;
   --danger:#dc2626; --danger-soft:#fdecec; --vurgu:#b45309; --vurgu-soft:#fef3e2;
   --iyi:#059669;
+  --grad:linear-gradient(135deg,#6d28d9,#9333ea);
   --golge:0 1px 3px rgba(28,22,51,.08);
 }
 @media (prefers-color-scheme: dark){
@@ -19,6 +27,7 @@
     --border:#332b4d; --primary:#a78bfa; --primary-koyu:#c4b5fd; --primary-soft:#2c2347;
     --danger:#f87171; --danger-soft:#3c2030; --vurgu:#fbbf24; --vurgu-soft:#3a2f1a;
     --iyi:#34d399;
+    --grad:linear-gradient(135deg,#7c3aed,#9333ea);
     --golge:0 1px 3px rgba(0,0,0,.4);
   }
 }
@@ -38,7 +47,8 @@ header{
   padding:calc(10px + env(safe-area-inset-top)) 16px 10px;
   display:flex; align-items:center; justify-content:space-between;
 }
-header h1{font-size:17px; font-weight:700; letter-spacing:-.01em}
+header h1{font-size:17px; font-weight:700; letter-spacing:-.01em; display:flex; align-items:center; gap:8px}
+header h1 img{border-radius:7px; display:block}
 #toplam-rozet{
   font-size:12.5px; font-weight:600; color:var(--primary);
   background:var(--primary-soft); border-radius:999px; padding:3px 10px;
@@ -59,9 +69,11 @@ h2{font-size:19px; font-weight:700; margin-bottom:12px; letter-spacing:-.01em}
 .alan label .istege{font-weight:400; color:var(--muted)}
 input[type=text], input[type=date], select, textarea{
   width:100%; font:inherit; font-size:16px; color:var(--text);
-  background:var(--surface); border:1px solid var(--border); border-radius:10px;
+  background:var(--surface); border:1.5px solid var(--border); border-radius:11px;
   padding:11px 12px; min-height:46px;
+  transition:border-color .15s ease;
 }
+input[type=text]:focus, input[type=date]:focus, select:focus, textarea:focus{border-color:var(--primary)}
 textarea{resize:vertical; min-height:72px}
 input:focus, select:focus, textarea:focus, button:focus-visible{
   outline:2px solid var(--primary); outline-offset:1px;
@@ -85,13 +97,17 @@ input:focus, select:focus, textarea:focus, button:focus-visible{
 
 .buton{
   width:100%; min-height:50px; border:none; border-radius:12px;
-  background:var(--primary); color:var(--bg); font-size:16px; font-weight:700;
+  background:var(--grad); color:#fff; font-size:16px; font-weight:700;
+  box-shadow:0 2px 8px rgba(109,40,217,.28);
+  transition:transform .12s ease, box-shadow .12s ease;
 }
-@media (prefers-color-scheme: dark){ .buton{color:#141020} }
-.buton:active{transform:scale(.985)}
+.buton:active{transform:scale(.985); box-shadow:0 1px 3px rgba(109,40,217,.2)}
+.buton.ikincil, .buton.tehlike{box-shadow:none}
 .buton.ikincil{background:var(--surface); color:var(--text); border:1px solid var(--border); font-weight:600}
 .buton.tehlike{background:var(--danger-soft); color:var(--danger)}
 .buton:disabled{opacity:.5; cursor:default}
+.buton.ikonlu{display:flex; align-items:center; justify-content:center; gap:8px}
+a{color:var(--primary); font-weight:600; word-break:break-all}
 
 #duzenleme-cubugu{
   display:none; align-items:center; justify-content:space-between; gap:10px;
@@ -109,7 +125,7 @@ input:focus, select:focus, textarea:focus, button:focus-visible{
 .adet{font-size:13px; font-weight:700; color:var(--primary); background:var(--primary-soft); border-radius:999px; padding:2px 10px; min-width:34px; text-align:center}
 .ders-satir.vurgu .adet{color:var(--vurgu); background:var(--vurgu-soft)}
 .bar{height:6px; background:var(--primary-soft); border-radius:99px; margin:0 14px 13px}
-.bar > div{height:100%; background:var(--primary); border-radius:99px; min-width:6px}
+.bar > div{height:100%; background:var(--grad); border-radius:99px; min-width:6px}
 .ders-satir.vurgu .bar > div{background:var(--vurgu)}
 .altlar{display:none; border-top:1px solid var(--border); padding:8px 14px 10px}
 .ders-satir.genis .altlar{display:block}
@@ -133,16 +149,28 @@ input:focus, select:focus, textarea:focus, button:focus-visible{
 .yorum-kart.iyi{border-left-color:var(--iyi)}
 .yorum-kart.iyi svg{color:var(--iyi)}
 .yorum-kart svg{flex:none; margin-top:2px; color:var(--primary)}
-#haftalik-grafik{
-  display:flex; align-items:flex-end; gap:6px;
+.sayac-kart{background:var(--primary-soft); border:1px solid var(--border); border-radius:14px; padding:14px; margin-bottom:14px}
+.sayac-ust{display:flex; align-items:baseline; gap:8px; flex-wrap:wrap}
+.sayac-gun{font-size:36px; font-weight:800; color:var(--primary); line-height:1}
+.sayac-ad{font-weight:700; font-size:14.5px}
+.sayac-durum{font-size:13px; font-weight:700; margin-top:8px; color:var(--vurgu)}
+.sayac-detay{font-size:12.5px; color:var(--muted); margin-top:8px; display:grid; gap:3px}
+.sayac-detay b{color:var(--text); font-weight:600}
+#ozet-satiri{display:flex; gap:8px; margin-bottom:12px}
+.ozet-kutu{flex:1; background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:10px 6px; text-align:center; box-shadow:var(--golge)}
+.ozet-kutu .sayi{display:block; font-size:20px; font-weight:800; color:var(--primary)}
+.ozet-kutu .ad{display:block; font-size:11px; color:var(--muted); font-weight:600}
+#gunluk-grafik{
+  display:flex; align-items:flex-end; gap:4px;
   background:var(--surface); border:1px solid var(--border); border-radius:12px;
-  padding:12px 12px 8px; height:150px; box-shadow:var(--golge);
+  padding:12px 10px 8px; height:150px; box-shadow:var(--golge);
 }
-.hafta-sutun{flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; gap:3px; height:100%}
-.hafta-sutun .cubuk{width:100%; max-width:34px; background:var(--primary); border-radius:6px 6px 0 0}
-.hafta-sutun.bu-hafta .cubuk{background:var(--vurgu)}
-.hafta-sutun .deger{font-size:11px; font-weight:700; color:var(--muted); min-height:15px}
-.hafta-sutun .etiket{font-size:9.5px; color:var(--muted); white-space:nowrap}
+#gunluk-grafik.dar{gap:2px}
+.gun-sutun{flex:1; min-width:0; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; gap:3px; height:100%}
+.gun-sutun .cubuk{width:100%; max-width:34px; background:var(--primary); border-radius:4px 4px 0 0}
+.gun-sutun.bugun .cubuk{background:var(--vurgu)}
+.gun-sutun .deger{font-size:10.5px; font-weight:700; color:var(--muted); min-height:14px}
+.gun-sutun .etiket{font-size:9px; color:var(--muted); white-space:nowrap; min-height:11px}
 .deneme-satir{background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:11px 12px; margin-bottom:8px; box-shadow:var(--golge)}
 .deneme-satir .ust{display:flex; align-items:center; justify-content:space-between; gap:8px; font-size:14px; font-weight:600}
 .deneme-satir .alt-bilgi{font-size:12.5px; color:var(--muted); margin-top:2px}
@@ -152,7 +180,9 @@ input:focus, select:focus, textarea:focus, button:focus-visible{
   width:100%; text-align:left; background:var(--surface); border:1px solid var(--border);
   border-radius:12px; margin-bottom:10px; padding:12px; box-shadow:var(--golge);
   display:flex; gap:12px; align-items:flex-start; color:inherit;
+  transition:transform .12s ease;
 }
+.kayit-kart:active{transform:scale(.99)}
 .kayit-kart img{width:64px; height:64px; object-fit:cover; border-radius:8px; flex:none; border:1px solid var(--border)}
 .foto-yok{width:64px; height:64px; border-radius:8px; flex:none; background:var(--primary-soft); color:var(--primary); display:flex; align-items:center; justify-content:center}
 .kayit-bilgi{flex:1; min-width:0}
@@ -208,6 +238,19 @@ input:focus, select:focus, textarea:focus, button:focus-visible{
 }
 #toast.acik{opacity:1; transform:translateX(-50%) translateY(0)}
 
+/* ---------- Giriş & senkron ---------- */
+#giris-ekrani{position:fixed; inset:0; z-index:80; background:var(--bg); display:none; align-items:center; justify-content:center; padding:24px}
+#giris-ekrani.acik{display:flex}
+.giris-kart{width:100%; max-width:380px; background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:24px; box-shadow:var(--golge)}
+.giris-kart h2{margin-bottom:6px}
+.giris-kart > p{font-size:13.5px; color:var(--muted); margin-bottom:16px}
+.giris-atla{display:block; width:100%; text-align:center; background:none; border:none; color:var(--muted); font-size:13.5px; margin-top:12px; text-decoration:underline; min-height:40px}
+#senkron-durum{font-size:11px; font-weight:600; color:var(--muted); display:flex; align-items:center; gap:5px}
+#senkron-durum .nokta{width:8px; height:8px; border-radius:50%; background:var(--muted); flex:none}
+#senkron-durum.tamam .nokta{background:var(--iyi)}
+#senkron-durum.calisiyor .nokta{background:var(--primary)}
+#senkron-durum.sorun .nokta{background:var(--vurgu)}
+
 .bos-durum{
   text-align:center; color:var(--muted); font-size:14px;
   padding:36px 16px; background:var(--surface); border:1px dashed var(--border); border-radius:12px;
@@ -231,8 +274,11 @@ nav{
 <body>
 
 <header>
-  <h1>HMGS Yanlış Takip</h1>
-  <span id="toplam-rozet">0 kayıt</span>
+  <h1><img src="apple-touch-icon.png" alt="" width="26" height="26">HMGS Yanlış Takip</h1>
+  <div style="display:flex; flex-direction:column; align-items:flex-end; gap:3px">
+    <span id="toplam-rozet">0 kayıt</span>
+    <span id="senkron-durum"><span class="nokta"></span><span id="senkron-metin">yerel mod</span></span>
+  </div>
 </header>
 
 <main>
@@ -246,12 +292,12 @@ nav{
     </div>
     <form id="kayit-form" novalidate>
       <div class="alan">
-        <label for="f-deneme">Deneme adı</label>
-        <input type="text" id="f-deneme" list="deneme-list" placeholder="Örn: Marka Deneme 3" autocomplete="off">
+        <label for="f-deneme">Deneme / Test adı <span class="istege">(isteğe bağlı)</span></label>
+        <input type="text" id="f-deneme" list="deneme-list" placeholder="Örn: Marka Deneme 3, Medeni konu testi" autocomplete="off">
         <datalist id="deneme-list"></datalist>
       </div>
       <div class="alan">
-        <label for="f-tarih">Tarih <span class="istege">(denemeyi çözdüğün gün)</span></label>
+        <label for="f-tarih">Tarih <span class="istege">(çözdüğün gün)</span></label>
         <input type="date" id="f-tarih">
       </div>
       <div class="alan">
@@ -278,6 +324,13 @@ nav{
         </button>
         <input type="file" id="f-foto" accept="image/*" multiple hidden>
         <div id="foto-onizleme"></div>
+        <div id="ai-kutu" hidden style="margin-top:10px">
+          <button type="button" class="buton ikincil ikonlu" id="ai-doldur">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            Fotoğraftan Doldur (AI)
+          </button>
+          <p class="aciklama" id="ai-durum-form" style="margin:6px 0 0"></p>
+        </div>
       </div>
       <button type="submit" class="buton" id="kaydet-btn">Kaydet</button>
     </form>
@@ -286,6 +339,7 @@ nav{
   <!-- ============ ANALİZ ============ -->
   <section class="gorunum" id="view-konular">
     <h2>Analiz</h2>
+    <div id="sinav-sayac"></div>
     <div class="alan">
       <label for="analiz-aralik">Dönem</label>
       <select id="analiz-aralik">
@@ -295,13 +349,14 @@ nav{
         <option value="7">Son 7 gün</option>
       </select>
     </div>
+    <div id="ozet-satiri"></div>
     <div id="yorum-kartlari"></div>
-    <h3 class="analiz-baslik">Haftalık gidişat (son 8 hafta)</h3>
-    <div id="haftalik-grafik"></div>
+    <h3 class="analiz-baslik">Günlük gidişat</h3>
+    <div id="gunluk-grafik"></div>
     <h3 class="analiz-baslik">Ders kırılımı</h3>
     <p class="aciklama">Derse dokununca alt başlık kırılımı açılır. En zayıf 3 ders işaretli.</p>
     <div id="konular-liste"></div>
-    <h3 class="analiz-baslik">Deneme bazında</h3>
+    <h3 class="analiz-baslik">Deneme / test bazında</h3>
     <div id="deneme-ozet"></div>
   </section>
 
@@ -338,9 +393,27 @@ nav{
     </div>
   </section>
 
-  <!-- ============ YEDEK ============ -->
+  <!-- ============ AYARLAR & YEDEK ============ -->
   <section class="gorunum" id="view-yedek">
-    <h2>Yedekleme</h2>
+    <h2>Ayarlar</h2>
+    <div class="yedek-kutu">
+      <h3>Hesap ve eşitleme</h3>
+      <p id="hesap-bilgi"></p>
+      <div class="tekrar-butonlar" style="margin-bottom:0">
+        <button type="button" class="buton ikincil" id="btn-senkron">Şimdi Eşitle</button>
+        <button type="button" class="buton tehlike" id="btn-cikis">Çıkış Yap</button>
+      </div>
+    </div>
+    <div class="yedek-kutu">
+      <h3>Fotoğraftan otomatik doldurma (AI)</h3>
+      <p>Soru fotoğrafını ekleyince ders, alt başlık ve kısa not otomatik tanınır. Bunun için ücretsiz bir Google AI Studio anahtarı gerekir: <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> — Google hesabıyla gir, "Create API key" de, çıkan anahtarı buraya yapıştır. Kart bilgisi istemez, ücret çıkmaz. Anahtar yalnızca bu cihazın tarayıcısında saklanır.</p>
+      <div class="alan">
+        <label for="ai-anahtar">API anahtarı</label>
+        <input type="text" id="ai-anahtar" placeholder="AIza…" autocomplete="off" spellcheck="false">
+      </div>
+      <button type="button" class="buton" id="ai-kaydet">Anahtarı Kaydet</button>
+      <p class="aciklama" id="ai-durum" style="margin:10px 0 0"></p>
+    </div>
     <div class="yedek-kutu">
       <h3>Dışa aktar</h3>
       <p>Tüm kayıtları fotoğraflarıyla birlikte tek bir JSON dosyası olarak indirir. Düzenli aralıklarla yedek almanı öneririm — veriler yalnızca bu tarayıcıda saklanıyor.</p>
@@ -375,11 +448,26 @@ nav{
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
     Tekrar
   </button>
-  <button class="sekme" data-gorunum="yedek" aria-label="Yedekleme">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-    Yedek
+  <button class="sekme" data-gorunum="yedek" aria-label="Ayarlar ve yedekleme">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+    Ayarlar
   </button>
 </nav>
+
+<!-- Giriş ekranı -->
+<div id="giris-ekrani">
+  <div class="giris-kart">
+    <h2>HMGS Yanlış Takip</h2>
+    <p>Kullanıcı adınla gir; kayıtların buluta yedeklenir ve telefonla bilgisayar arasında otomatik eşitlenir. Şifre yok — başkalarının tahmin edemeyeceği bir ad seç.</p>
+    <div class="alan">
+      <label for="giris-ad">Kullanıcı adı</label>
+      <input type="text" id="giris-ad" placeholder="örn: affan_hmgs" autocomplete="off" autocapitalize="none" spellcheck="false">
+      <div class="hata-mesaj" id="giris-hata">2-30 karakter: küçük harf, rakam, nokta, tire, alt çizgi.</div>
+    </div>
+    <button type="button" class="buton" id="giris-btn">Giriş Yap</button>
+    <button type="button" class="giris-atla" id="giris-atla">Şimdilik girişsiz devam et (sadece bu cihaz)</button>
+  </div>
+</div>
 
 <!-- Kayıt detay modalı -->
 <div class="ortu" id="detay" role="dialog" aria-modal="true">
@@ -430,6 +518,25 @@ let bekleyenFotolar = [];     // formdaki Blob'lar
 let objURLs = [];             // render başına açılan object URL'ler
 let tekrarDeste = [], tekrarIndex = 0, tekrarNotAcik = false;
 let aktifGorunum = 'ekle';
+let senkronDevam = false, senkronZamanlayici = null;
+
+const API_YOLU = '/api/senkron';
+const KULLANICI_ANAHTARI = 'hmgs-kullanici';
+function kullanici(){
+  try { return (localStorage.getItem(KULLANICI_ANAHTARI) || '').trim(); } catch (e) { return ''; }
+}
+function uidUret(){
+  return (window.crypto && crypto.randomUUID)
+    ? crypto.randomUUID()
+    : 'u' + Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+}
+function senkronMumkun(){
+  return !!kullanici() && location.protocol !== 'file:';
+}
+function senkronDurumYaz(sinif, metin){
+  $('#senkron-durum').className = sinif;
+  $('#senkron-metin').textContent = metin;
+}
 
 const $ = s => document.querySelector(s);
 
@@ -460,6 +567,13 @@ function islem(mod, fn){
 const dbEkle    = k  => islem('readwrite', s => s.add(k));
 const dbGuncelle= k  => islem('readwrite', s => s.put(k));
 const dbSil     = id => islem('readwrite', s => s.delete(id));
+function dbGetir(id){
+  return new Promise((res, rej) => {
+    const istek = db.transaction('kayitlar').objectStore('kayitlar').get(id);
+    istek.onsuccess = () => res(istek.result);
+    istek.onerror = () => rej(istek.error);
+  });
+}
 function dbTumu(){
   return new Promise((res, rej) => {
     const istek = db.transaction('kayitlar').objectStore('kayitlar').getAll();
@@ -547,6 +661,92 @@ async function sikistir(file){
   });
 }
 
+/* ---------------- AI: fotoğraftan tanıma ---------------- */
+const AI_ANAHTAR_ADI = 'hmgs-ai-anahtar';
+function aiAnahtar(){
+  try { return (localStorage.getItem(AI_ANAHTAR_ADI) || '').trim(); } catch (e) { return ''; }
+}
+const AI_ISTEM =
+  'Bu fotoğraf(lar) Türkiye HMGS (Hukuk Mesleklerine Giriş Sınavı) tarzı bir hukuk test sorusudur. ' +
+  'Görevin:\n1) Soruyu şu ders listesinden TAM OLARAK birine ata: ' + DERSLER.join('; ') + '.\n' +
+  '2) Sorunun test ettiği konuyu 2-5 kelimelik kısa bir alt başlık olarak Türkçe yaz (örn: "Zamanaşımı", "Taşınmaz satış vaadi").\n' +
+  '3) Sorunun test ettiği ayrımı veya tipik tuzağı tek kısa cümleyle "not" olarak yaz.\n' +
+  'SADECE şu biçimde geçerli JSON döndür: {"ders":"...","altBaslik":"...","not":"..."}';
+function dersEslestir(ad){
+  if (!ad) return '';
+  const n = String(ad).toLocaleLowerCase('tr').trim();
+  const tam = DERSLER.find(d => d.toLocaleLowerCase('tr') === n);
+  if (tam) return tam;
+  return DERSLER.find(d => {
+    const kisa = d.toLocaleLowerCase('tr').split(' (')[0];
+    return n.includes(kisa) || kisa.includes(n);
+  }) || '';
+}
+async function aiDoldur(){
+  const anahtar = aiAnahtar();
+  if (!anahtar) {
+    toast('Önce Ayarlar sekmesinden ücretsiz AI anahtarını kaydet');
+    gorunumuGoster('yedek');
+    return;
+  }
+  if (!bekleyenFotolar.length) { toast('Önce fotoğraf ekle'); return; }
+  const btn = $('#ai-doldur'), durum = $('#ai-durum-form');
+  btn.disabled = true;
+  durum.textContent = 'Soru okunuyor…';
+  try {
+    const parcalar = [{ text: AI_ISTEM }];
+    for (const b of bekleyenFotolar.slice(0, 3)) {
+      const d = await blobToDataURL(b);
+      parcalar.push({ inline_data: { mime_type: 'image/jpeg', data: d.slice(d.indexOf(',') + 1) } });
+    }
+    const aiIstek = model => fetch(
+      'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + encodeURIComponent(anahtar),
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: parcalar }],
+          generationConfig: { response_mime_type: 'application/json', temperature: 0.2 }
+        })
+      }
+    );
+    let yanit = await aiIstek('gemini-2.5-flash');
+    if (yanit.status === 429) {
+      // günlük limit dolduysa daha yüksek limitli yedek modele geç
+      durum.textContent = 'Limit dolmuş, yedek modelle deneniyor…';
+      yanit = await aiIstek('gemini-2.5-flash-lite');
+    }
+    if (!yanit.ok) {
+      throw new Error(yanit.status === 400 || yanit.status === 403
+        ? 'anahtar geçersiz görünüyor, Ayarlar\'dan kontrol et'
+        : yanit.status === 429
+          ? 'günlük ücretsiz limit dolmuş olabilir, biraz sonra dene'
+          : 'sunucu hatası (' + yanit.status + ')');
+    }
+    const veri = await yanit.json();
+    let metin = (((veri.candidates || [])[0] || {}).content || {}).parts;
+    metin = metin && metin[0] && metin[0].text ? metin[0].text.trim() : '';
+    if (metin.indexOf('```') === 0) metin = metin.replace(/^```[a-z]*\s*/i, '').replace(/```\s*$/, '');
+    const s = JSON.parse(metin);
+    const ders = dersEslestir(s.ders);
+    if (ders) {
+      $('#f-ders').value = ders;
+      $('#f-hata').classList.remove('acik');
+      altBaslikOnerileriniGuncelle();
+    }
+    if (s.altBaslik) $('#f-altbaslik').value = String(s.altBaslik).slice(0, 80);
+    if (s.not && !$('#f-not').value.trim()) $('#f-not').value = String(s.not).slice(0, 300);
+    durum.textContent = ders
+      ? 'Dolduruldu — kontrol et, gerekirse düzelt, sonra kaydet.'
+      : 'Ders net anlaşılamadı, elle seçmen gerekiyor.';
+    toast('AI önerisi hazır');
+  } catch (e) {
+    durum.textContent = 'Tanıma başarısız: ' + e.message;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
 /* ---------------- Başlatma ---------------- */
 async function init(){
   try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch (e) {}
@@ -561,14 +761,32 @@ async function init(){
     o.value = o.textContent = d;
     sec.appendChild(o);
   });
+  // eski kayıtlara senkron kimliği ekle (tek seferlik geçiş)
+  const hepsi = await dbTumu();
+  for (const k of hepsi) {
+    if (!k.uid) {
+      k.uid = uidUret();
+      k.guncelleme = k.tarih || new Date().toISOString();
+      k.bekliyor = true;
+      await dbGuncelle(k);
+    }
+  }
   await yenile();
   $('#f-tarih').value = bugunLocal();
   olaylariBagla();
+  hesapArayuz();
+  if (!kullanici() && !localStorage.getItem('hmgs-girissiz')) {
+    $('#giris-ekrani').classList.add('acik');
+  }
   gorunumuGoster('ekle');
+  if (senkronMumkun()) senkronla();
+  setInterval(() => { if (senkronMumkun() && !document.hidden) senkronla(); }, 60000);
+  window.addEventListener('online', () => { if (senkronMumkun()) senkronla(); });
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && senkronMumkun()) senkronla(); });
 }
 
 async function yenile(){
-  kayitlar = await dbTumu();
+  kayitlar = (await dbTumu()).filter(k => !k.silindi);
   kayitlar.sort((a, b) => (b.tarih || '').localeCompare(a.tarih || '') || b.id - a.id);
   $('#toplam-rozet').textContent = kayitlar.length + ' kayıt';
   denemeOnerileriniGuncelle();
@@ -629,6 +847,8 @@ function fotoOnizlemeCiz(){
     dis.append(im, sil);
     kutu.appendChild(dis);
   });
+  $('#ai-kutu').hidden = bekleyenFotolar.length === 0;
+  if (bekleyenFotolar.length === 0) $('#ai-durum-form').textContent = '';
 }
 function formuSifirla(denemeKalsin){
   const deneme = $('#f-deneme').value;
@@ -656,16 +876,20 @@ async function kaydet(e){
   btn.disabled = true;
   try {
     const gun = $('#f-tarih').value || bugunLocal();
+    const eski = duzenlenenId != null ? kayitlar.find(k => k.id === duzenlenenId) : null;
     const kayit = {
+      uid: eski && eski.uid ? eski.uid : uidUret(),
       deneme: $('#f-deneme').value.trim(),
       ders,
       altBaslik: $('#f-altbaslik').value.trim(),
       not: $('#f-not').value.trim(),
       fotolar: bekleyenFotolar.slice(),
-      tarih: isoTarihUret(gun)
+      tarih: isoTarihUret(gun),
+      guncelleme: new Date().toISOString(),
+      silindi: false,
+      bekliyor: true
     };
     if (duzenlenenId != null) {
-      const eski = kayitlar.find(k => k.id === duzenlenenId);
       kayit.id = duzenlenenId;
       // gün değişmediyse orijinal saati koru
       if (eski && eski.tarih && yerelGun(eski.tarih) === gun) kayit.tarih = eski.tarih;
@@ -677,6 +901,7 @@ async function kaydet(e){
     }
     formuSifirla(true);
     await yenile();
+    senkronTetikle();
   } catch (err) {
     toast('Kaydedilemedi: ' + (err && err.message ? err.message : 'bilinmeyen hata'));
   } finally {
@@ -712,12 +937,72 @@ function analizListesi(){
     return !isNaN(d) && d >= esik;
   });
 }
+/* ÖSYM 2026 takvimi — yeni sınav açıklanınca buraya eklenir, sayaç kendiliğinden ona geçer */
+const SINAV_TAKVIMI = [
+  {
+    ad: '2026-HMGS/2',
+    sinav: '2026-09-27', sinavYazi: '27 Eylül 2026 Pazar',
+    basvuruBas: '2026-08-11', basvuruSon: '2026-08-19', basvuruYazi: '11 – 19 Ağustos 2026',
+    gecGun: '2026-08-26', gecYazi: '26 Ağustos 2026',
+    sonucYazi: '22 Ekim 2026'
+  }
+];
+function renderSinavSayac(){
+  const bugun = bugunLocal();
+  const sinav = SINAV_TAKVIMI.find(s => s.sinav >= bugun);
+  const kutu = $('#sinav-sayac');
+  if (!sinav) { kutu.innerHTML = ''; return; }
+  const gunFarki = (a, b) => Math.round((new Date(a + 'T12:00') - new Date(b + 'T12:00')) / 86400000);
+  const kalan = gunFarki(sinav.sinav, bugun);
+  let durum = '';
+  if (bugun < sinav.basvuruBas) {
+    durum = 'Başvurular ' + gunFarki(sinav.basvuruBas, bugun) + ' gün sonra başlıyor.';
+  } else if (bugun <= sinav.basvuruSon) {
+    durum = 'BAŞVURULAR AÇIK — son gün ' + sinav.basvuruYazi.split('– ')[1] + '!';
+  } else if (bugun <= sinav.gecGun) {
+    durum = 'Normal başvuru bitti — geç başvuru günü ' + sinav.gecYazi + ' (ek ücretli).';
+  } else {
+    durum = 'Başvuru dönemi kapandı.';
+  }
+  kutu.innerHTML = `<div class="sayac-kart">
+    <div class="sayac-ust">
+      <span class="sayac-gun">${kalan}</span>
+      <span class="sayac-ad">gün kaldı — ${esc(sinav.ad)}</span>
+    </div>
+    <div class="sayac-durum">${esc(durum)}</div>
+    <div class="sayac-detay">
+      <span>Sınav: <b>${esc(sinav.sinavYazi)}</b></span>
+      <span>Başvuru: <b>${esc(sinav.basvuruYazi)}</b></span>
+      <span>Geç başvuru: <b>${esc(sinav.gecYazi)}</b></span>
+      <span>Sonuç: <b>${esc(sinav.sonucYazi)}</b></span>
+    </div>
+  </div>`;
+}
+
 function renderAnaliz(){
   const liste = analizListesi();
+  renderSinavSayac();
+  renderOzetSatiri();
   renderYorumlar(liste);
-  renderHaftalik();
+  renderGunluk();
   renderKonular(liste);
   renderDenemeOzet();
+}
+
+function renderOzetSatiri(){
+  const bugun = bugunLocal();
+  const esik = new Date();
+  esik.setDate(esik.getDate() - 6);
+  esik.setHours(0, 0, 0, 0);
+  let bugunSayi = 0, haftaSayi = 0;
+  for (const k of kayitlar) {
+    const d = new Date(k.tarih);
+    if (isNaN(d)) continue;
+    if (yerelGun(k.tarih) === bugun) bugunSayi++;
+    if (d >= esik) haftaSayi++;
+  }
+  const kutucuk = (sayi, ad) => `<div class="ozet-kutu"><span class="sayi">${sayi}</span><span class="ad">${ad}</span></div>`;
+  $('#ozet-satiri').innerHTML = kutucuk(bugunSayi, 'Bugün') + kutucuk(haftaSayi, 'Son 7 gün') + kutucuk(kayitlar.length, 'Toplam');
 }
 
 /* gün sayısına göre kayıt say (bugünden geriye) */
@@ -808,9 +1093,9 @@ function renderYorumlar(liste){
     const oncekiler = sirali.slice(0, -1);
     const ort = oncekiler.reduce((t, x) => t + x[1].sayi, 0) / oncekiler.length;
     if (son[1].sayi <= ort * 0.7) {
-      yorumlar.push({ tip: 'iyi', metin: `Son denemen (<b>${esc(son[0])}</b>) ${son[1].sayi} yanlışla önceki ortalamanın (${ort.toFixed(1)}) altında — gidişat iyi.` });
+      yorumlar.push({ tip: 'iyi', metin: `Son deneme/testin (<b>${esc(son[0])}</b>) ${son[1].sayi} yanlışla önceki ortalamanın (${ort.toFixed(1)}) altında — gidişat iyi.` });
     } else if (son[1].sayi >= ort * 1.3) {
-      yorumlar.push({ tip: 'uyari', metin: `Son denemen (<b>${esc(son[0])}</b>) ${son[1].sayi} yanlışla önceki ortalamanın (${ort.toFixed(1)}) üzerinde.` });
+      yorumlar.push({ tip: 'uyari', metin: `Son deneme/testin (<b>${esc(son[0])}</b>) ${son[1].sayi} yanlışla önceki ortalamanın (${ort.toFixed(1)}) üzerinde.` });
     }
   }
 
@@ -824,30 +1109,36 @@ function renderYorumlar(liste){
   kutu.innerHTML = yorumlar.map(y => `<div class="yorum-kart ${y.tip}">${IKON[y.tip]}<span>${y.metin}</span></div>`).join('');
 }
 
-function renderHaftalik(){
-  const kutu = $('#haftalik-grafik');
-  const simdi = new Date();
-  const buHafta = new Date(simdi.getFullYear(), simdi.getMonth(), simdi.getDate());
-  buHafta.setDate(buHafta.getDate() - (buHafta.getDay() + 6) % 7);   // Pazartesi
-  const haftalar = [];
-  for (let i = 7; i >= 0; i--) {
-    const h = new Date(buHafta);
-    h.setDate(h.getDate() - 7 * i);
-    haftalar.push({ bas: h, sayi: 0 });
+function renderGunluk(){
+  const kutu = $('#gunluk-grafik');
+  const v = $('#analiz-aralik').value || '*';
+  const gunSayisi = v === '*' ? 30 : Math.max(7, Number(v));   // 7 / 14 / 30 günlük bar
+  const bugun = new Date();
+  bugun.setHours(0, 0, 0, 0);
+  const gunler = [];
+  for (let i = gunSayisi - 1; i >= 0; i--) {
+    const d = new Date(bugun);
+    d.setDate(d.getDate() - i);
+    gunler.push({ bas: d, sayi: 0 });
   }
   for (const k of kayitlar) {
     const d = new Date(k.tarih);
     if (isNaN(d)) continue;
-    for (let i = haftalar.length - 1; i >= 0; i--) {
-      if (d >= haftalar[i].bas) { haftalar[i].sayi++; break; }
-    }
+    const g = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    const fark = Math.round((g - gunler[0].bas) / 86400000);
+    if (fark >= 0 && fark < gunler.length) gunler[fark].sayi++;
   }
-  const maks = Math.max(1, ...haftalar.map(h => h.sayi));
-  kutu.innerHTML = haftalar.map((h, i) => {
-    const yukseklik = Math.max(2, Math.round(h.sayi / maks * 70));
-    const etiket = h.bas.getDate() + '.' + String(h.bas.getMonth() + 1).padStart(2, '0');
-    return `<div class="hafta-sutun${i === haftalar.length - 1 ? ' bu-hafta' : ''}">
-      <span class="deger">${h.sayi || ''}</span>
+  const maks = Math.max(1, ...gunler.map(g => g.sayi));
+  const etiketAdim = gunSayisi > 21 ? 5 : (gunSayisi > 10 ? 2 : 1);
+  kutu.classList.toggle('dar', gunSayisi > 21);
+  kutu.innerHTML = gunler.map((g, i) => {
+    const yukseklik = Math.max(2, Math.round(g.sayi / maks * 70));
+    const son = i === gunler.length - 1;
+    const etiket = (i % etiketAdim === 0 || son)
+      ? g.bas.getDate() + '.' + String(g.bas.getMonth() + 1).padStart(2, '0') : '';
+    const deger = (gunSayisi <= 14 && g.sayi) ? g.sayi : '';
+    return `<div class="gun-sutun${son ? ' bugun' : ''}" title="${tarihYaz(g.bas.toISOString())} — ${g.sayi} yanlış">
+      <span class="deger">${deger}</span>
       <div class="cubuk" style="height:${yukseklik}%"></div>
       <span class="etiket">${etiket}</span>
     </div>`;
@@ -859,7 +1150,7 @@ function renderDenemeOzet(){
   if (!kayitlar.length) { kutu.innerHTML = '<div class="bos-durum">Henüz kayıt yok.</div>'; return; }
   const gruplar = new Map();
   for (const k of kayitlar) {
-    const ad = k.deneme || '(deneme belirtilmemiş)';
+    const ad = k.deneme || '(kaynak belirtilmemiş)';
     if (!gruplar.has(ad)) gruplar.set(ad, { sayi: 0, ilk: k.tarih || '', dersler: new Map() });
     const g = gruplar.get(ad);
     g.sayi++;
@@ -953,7 +1244,7 @@ function renderKayitlar(){
       <span class="kayit-bilgi">
         <span class="ders">${esc(k.ders)}</span>
         ${k.altBaslik ? `<span class="alt"> · ${esc(k.altBaslik)}</span>` : ''}
-        <span class="meta">${esc(k.deneme || 'Deneme belirtilmemiş')} — ${tarihYaz(k.tarih)}${k.fotolar && k.fotolar.length > 1 ? ' — ' + k.fotolar.length + ' foto' : ''}</span>
+        <span class="meta">${esc(k.deneme || 'Kaynak belirtilmemiş')} — ${tarihYaz(k.tarih)}${k.fotolar && k.fotolar.length > 1 ? ' — ' + k.fotolar.length + ' foto' : ''}</span>
         ${k.not ? `<span class="onizleme-not">${esc(k.not)}</span>` : ''}
       </span>`;
     kart.onclick = () => detayAc(k.id);
@@ -969,7 +1260,7 @@ function detayAc(id){
   icerik.innerHTML = `
     <h3>${esc(k.ders)}</h3>
     ${k.altBaslik ? `<div class="alt-cizgi">${esc(k.altBaslik)}</div>` : ''}
-    <div class="meta">${esc(k.deneme || 'Deneme belirtilmemiş')} — ${tarihYaz(k.tarih)}</div>
+    <div class="meta">${esc(k.deneme || 'Kaynak belirtilmemiş')} — ${tarihYaz(k.tarih)}</div>
     ${k.not ? `<div class="not-metni">${esc(k.not)}</div>` : ''}
     <div id="detay-fotolar"></div>
     <div class="modal-butonlar">
@@ -988,11 +1279,20 @@ function detayAc(id){
   icerik.querySelector('#detay-duzenle').onclick = () => duzenleBaslat(id);
   icerik.querySelector('#detay-sil').onclick = async () => {
     if (!confirm('Bu kayıt kalıcı olarak silinsin mi?')) return;
-    await dbSil(id);
+    // senkron için iz bırak: kaydı silinmiş olarak işaretle (tüm cihazlardan kalkar)
+    const silinecek = await dbGetir(id);
+    if (silinecek) {
+      silinecek.silindi = true;
+      silinecek.fotolar = [];
+      silinecek.guncelleme = new Date().toISOString();
+      silinecek.bekliyor = true;
+      await dbGuncelle(silinecek);
+    }
     await yenile();
     modalKapat();
     renderKayitlar();
     toast('Kayıt silindi');
+    senkronTetikle();
   };
   icerik.querySelector('#detay-kapat').onclick = modalKapat;
   $('#detay').classList.add('acik');
@@ -1058,7 +1358,7 @@ function tekrarCiz(){
   panel.innerHTML = `
     ${k.altBaslik ? `<div class="satir"><b>Alt başlık</b>${esc(k.altBaslik)}</div>` : ''}
     <div class="satir"><b>Not</b>${k.not ? esc(k.not) : '<span style="color:var(--muted)">Not girilmemiş</span>'}</div>
-    <div class="satir"><b>Deneme</b>${esc(k.deneme || 'Belirtilmemiş')} — ${tarihYaz(k.tarih)}</div>`;
+    <div class="satir"><b>Deneme / Test</b>${esc(k.deneme || 'Belirtilmemiş')} — ${tarihYaz(k.tarih)}</div>`;
   kart.appendChild(panel);
   $('#tekrar-not').textContent = 'Notu Göster';
   $('#tekrar-onceki').disabled = tekrarIndex === 0;
@@ -1081,8 +1381,14 @@ function tekrarBitir(mesaj){
 
 /* ---------------- Yedekleme ---------------- */
 function renderYedekBilgi(){
+  hesapArayuz();
   const fotoSayisi = kayitlar.reduce((t, k) => t + (k.fotolar ? k.fotolar.length : 0), 0);
   $('#yedek-bilgi').textContent = `Şu an ${kayitlar.length} kayıt ve ${fotoSayisi} fotoğraf saklı.`;
+  const a = aiAnahtar();
+  $('#ai-anahtar').value = a;
+  $('#ai-durum').textContent = a
+    ? 'Anahtar kayıtlı — fotoğraf ekleyince otomatik tanıma çalışır.'
+    : 'Anahtar kayıtlı değil — uygulama elle girişle normal çalışır, tanıma kapalı.';
 }
 async function disaAktar(){
   if (!kayitlar.length) { toast('Aktarılacak kayıt yok'); return; }
@@ -1122,20 +1428,141 @@ async function iceAktar(e){
     if (!confirm(veri.kayitlar.length + ' kayıt içe aktarılacak ve mevcut verinin ÜZERİNE EKLENECEK. Devam edilsin mi?')) return;
     for (const kk of veri.kayitlar) {
       const k = {
+        uid: uidUret(),
         deneme: kk.deneme || '',
         ders: kk.ders || '',
         altBaslik: kk.altBaslik || '',
         not: kk.not || '',
         tarih: kk.tarih || new Date().toISOString(),
-        fotolar: (kk.fotolar || []).map(dataURLtoBlob)
+        fotolar: (kk.fotolar || []).map(dataURLtoBlob),
+        guncelleme: new Date().toISOString(),
+        silindi: false,
+        bekliyor: true
       };
       await dbEkle(k);
     }
     await yenile();
     renderYedekBilgi();
     toast(veri.kayitlar.length + ' kayıt içe aktarıldı');
+    senkronTetikle();
   } catch (err) {
     alert('Dosya okunamadı ya da geçerli bir yedek dosyası değil.');
+  }
+}
+
+/* ---------------- Hesap & bulut eşitleme ---------------- */
+function hesapArayuz(){
+  const u = kullanici();
+  $('#hesap-bilgi').textContent = u
+    ? `Giriş yapıldı: "${u}". Kayıtların bu adla bulutta saklanıyor; aynı adla giren her cihazda aynı veriler görünür.`
+    : 'Giriş yapılmadı — kayıtlar yalnızca bu cihazda duruyor. Giriş yaparsan telefon ve bilgisayar arasında eşitlenir.';
+  $('#btn-cikis').textContent = u ? 'Çıkış Yap' : 'Giriş Yap';
+  $('#btn-senkron').style.display = u ? '' : 'none';
+  if (!u) senkronDurumYaz('', 'yerel mod');
+  else if (location.protocol === 'file:') senkronDurumYaz('sorun', 'eşitleme sitede çalışır');
+  else senkronDurumYaz('', 'eşitleme bekliyor');
+}
+function girisYap(){
+  // "Buse", "BUSE", " buse " → hepsi "buse" olarak aynı hesaba girer
+  const ad = $('#giris-ad').value.replace(/\s+/g, '').toLocaleLowerCase('tr');
+  if (!/^[a-z0-9çğıöşüâ._-]{2,30}$/.test(ad)) {
+    $('#giris-hata').classList.add('acik');
+    return;
+  }
+  $('#giris-hata').classList.remove('acik');
+  const onceki = localStorage.getItem('hmgs-son-kullanici');
+  if (onceki && onceki !== ad && kayitlar.length &&
+      !confirm(`Bu cihazda "${onceki}" adına ${kayitlar.length} kayıt var. "${ad}" ile girersen bu kayıtlar o hesapla BİRLEŞİR. Devam edilsin mi?`)) {
+    return;
+  }
+  try {
+    localStorage.setItem(KULLANICI_ANAHTARI, ad);
+    localStorage.setItem('hmgs-son-kullanici', ad);
+    localStorage.removeItem('hmgs-girissiz');
+  } catch (e) {}
+  $('#giris-ekrani').classList.remove('acik');
+  hesapArayuz();
+  toast('Hoş geldin, ' + ad);
+  if (senkronMumkun()) senkronla(true);
+}
+function senkronTetikle(){
+  if (!senkronMumkun()) return;
+  clearTimeout(senkronZamanlayici);
+  senkronZamanlayici = setTimeout(() => senkronla(), 1200);
+}
+async function senkronla(manuel){
+  if (!senkronMumkun() || senkronDevam) return;
+  senkronDevam = true;
+  senkronDurumYaz('calisiyor', 'eşitleniyor…');
+  const u = encodeURIComponent(kullanici());
+  try {
+    const tumu = await dbTumu();
+    // 1) bekleyen kayıtların fotoğraflarını yükle
+    const bekleyenler = tumu.filter(k => k.bekliyor);
+    for (const k of bekleyenler) {
+      for (let i = 0; i < (k.fotolar || []).length; i++) {
+        const d = await blobToDataURL(k.fotolar[i]);
+        const y = await fetch(API_YOLU + '?kullanici=' + u + '&foto=' + encodeURIComponent(k.uid + '-' + i), { method: 'PUT', body: d });
+        if (!y.ok) throw new Error('fotoğraf yüklenemedi');
+      }
+    }
+    // 2) meta listesini sunucuyla birleştir
+    const meta = tumu.map(k => ({
+      uid: k.uid, deneme: k.deneme || '', ders: k.ders || '', altBaslik: k.altBaslik || '',
+      not: k.not || '', tarih: k.tarih || '', guncelleme: k.guncelleme || '',
+      silindi: !!k.silindi, fotoSayisi: (k.fotolar || []).length
+    }));
+    const yanit = await fetch(API_YOLU + '?kullanici=' + u, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ kayitlar: meta })
+    });
+    if (!yanit.ok) throw new Error('sunucu hatası (' + yanit.status + ')');
+    const birlesik = await yanit.json();
+    // 3) sunucudan gelen daha yeni kayıtları yerele indir
+    const yerel = new Map(tumu.map(k => [k.uid, k]));
+    let degisti = false;
+    for (const r of (birlesik.kayitlar || [])) {
+      const l = yerel.get(r.uid);
+      if (l && (l.guncelleme || '') >= (r.guncelleme || '')) continue;
+      const fotolar = [];
+      if (!r.silindi) {
+        for (let i = 0; i < (r.fotoSayisi || 0); i++) {
+          const fy = await fetch(API_YOLU + '?kullanici=' + u + '&foto=' + encodeURIComponent(r.uid + '-' + i));
+          if (!fy.ok) continue;
+          const fv = await fy.json();
+          if (fv.veri) fotolar.push(dataURLtoBlob(fv.veri));
+        }
+      }
+      const yeni = {
+        uid: r.uid, deneme: r.deneme || '', ders: r.ders || '', altBaslik: r.altBaslik || '',
+        not: r.not || '', tarih: r.tarih || '', guncelleme: r.guncelleme || '',
+        silindi: !!r.silindi, bekliyor: false, fotolar
+      };
+      if (l) { yeni.id = l.id; await dbGuncelle(yeni); } else { await dbEkle(yeni); }
+      degisti = true;
+    }
+    // 4) yüklenenlerin bekliyor işaretini kaldır (bu arada düzenlenmediyse)
+    for (const k of bekleyenler) {
+      const guncel = await dbGetir(k.id);
+      if (guncel && guncel.guncelleme === k.guncelleme) {
+        guncel.bekliyor = false;
+        await dbGuncelle(guncel);
+      }
+    }
+    if (degisti) {
+      await yenile();
+      if (aktifGorunum === 'konular') renderAnaliz();
+      else if (aktifGorunum === 'kayitlar') renderKayitlar();
+      else if (aktifGorunum === 'yedek') renderYedekBilgi();
+    }
+    senkronDurumYaz('tamam', 'eşitlendi ' + new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }));
+    if (manuel) toast('Eşitleme tamamlandı');
+  } catch (e) {
+    senkronDurumYaz('sorun', 'çevrimdışı');
+    if (manuel) toast('Eşitlenemedi: ' + e.message);
+  } finally {
+    senkronDevam = false;
   }
 }
 
@@ -1161,6 +1588,17 @@ function olaylariBagla(){
     }
     $('#foto-btn').disabled = false;
     fotoOnizlemeCiz();
+    // anahtar kayıtlıysa ve ders henüz seçilmediyse otomatik tanı
+    if (aiAnahtar() && !$('#f-ders').value && bekleyenFotolar.length) aiDoldur();
+  });
+  $('#ai-doldur').addEventListener('click', aiDoldur);
+  $('#ai-kaydet').addEventListener('click', () => {
+    const v = $('#ai-anahtar').value.trim();
+    try {
+      if (v) { localStorage.setItem(AI_ANAHTAR_ADI, v); toast('Anahtar kaydedildi'); }
+      else { localStorage.removeItem(AI_ANAHTAR_ADI); toast('Anahtar silindi'); }
+    } catch (e) { toast('Anahtar kaydedilemedi'); }
+    renderYedekBilgi();
   });
   $('#duzenle-vazgec').addEventListener('click', () => { formuSifirla(false); toast('Düzenleme iptal edildi'); });
 
@@ -1175,6 +1613,25 @@ function olaylariBagla(){
     else tekrarBitir(true);
   });
   $('#tekrar-bitir').addEventListener('click', () => tekrarBitir(false));
+
+  $('#giris-btn').addEventListener('click', girisYap);
+  $('#giris-ad').addEventListener('keydown', e => { if (e.key === 'Enter') girisYap(); });
+  $('#giris-atla').addEventListener('click', () => {
+    try { localStorage.setItem('hmgs-girissiz', '1'); } catch (e) {}
+    $('#giris-ekrani').classList.remove('acik');
+    hesapArayuz();
+  });
+  $('#btn-cikis').addEventListener('click', () => {
+    if (kullanici()) {
+      if (!confirm('Çıkış yapılsın mı? Kayıtların hem bu cihazda hem bulutta durmaya devam eder.')) return;
+      try { localStorage.removeItem(KULLANICI_ANAHTARI); localStorage.setItem('hmgs-girissiz', '1'); } catch (e) {}
+      hesapArayuz();
+      toast('Çıkış yapıldı');
+    } else {
+      $('#giris-ekrani').classList.add('acik');
+    }
+  });
+  $('#btn-senkron').addEventListener('click', () => senkronla(true));
 
   $('#btn-disa').addEventListener('click', disaAktar);
   $('#btn-ice').addEventListener('click', () => $('#ice-dosya').click());
