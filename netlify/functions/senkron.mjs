@@ -7,14 +7,15 @@ import { getStore } from '@netlify/blobs';
 // POST ?kullanici=X                 -> gelen meta listesi sunucudakiyle birleştirilir
 //                                      (uid bazında, guncelleme'si yeni olan kazanır), sonuç döner
 
+const IZINLI_KULLANICILAR = new Set(['buse', 'efe', 'affan']);
 const KULLANICI_DESENI = /^[a-z0-9çğıöşüâ._-]{2,30}$/;
 const FOTO_DESENI = /^[A-Za-z0-9_-]{1,80}$/;
 
 export default async (req) => {
   const url = new URL(req.url);
   const kullanici = (url.searchParams.get('kullanici') || '').trim().toLocaleLowerCase('tr');
-  if (!KULLANICI_DESENI.test(kullanici)) {
-    return Response.json({ hata: 'geçersiz kullanıcı adı' }, { status: 400 });
+  if (!KULLANICI_DESENI.test(kullanici) || !IZINLI_KULLANICILAR.has(kullanici)) {
+    return Response.json({ hata: 'geçersiz kullanıcı adı' }, { status: 403 });
   }
   const store = getStore('hmgs');
   const foto = url.searchParams.get('foto') || '';

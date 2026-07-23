@@ -490,8 +490,8 @@ nav{
     <p>Kullanıcı adınla gir; kayıtların buluta yedeklenir ve telefonla bilgisayar arasında otomatik eşitlenir. Şifre yok — başkalarının tahmin edemeyeceği bir ad seç.</p>
     <div class="alan">
       <label for="giris-ad">Kullanıcı adı</label>
-      <input type="text" id="giris-ad" placeholder="örn: affan_hmgs" autocomplete="off" autocapitalize="none" spellcheck="false">
-      <div class="hata-mesaj" id="giris-hata">2-30 karakter: küçük harf, rakam, nokta, tire, alt çizgi.</div>
+      <input type="text" id="giris-ad" placeholder="kullanıcı adın" autocomplete="off" autocapitalize="none" spellcheck="false">
+      <div class="hata-mesaj" id="giris-hata">Bu kullanıcı adı tanımlı değil.</div>
     </div>
     <button type="button" class="buton" id="giris-btn">Giriş Yap</button>
     <button type="button" class="giris-atla" id="giris-atla">Şimdilik girişsiz devam et (sadece bu cihaz)</button>
@@ -1623,10 +1623,11 @@ function hesapArayuz(){
   else if (location.protocol === 'file:') senkronDurumYaz('sorun', 'eşitleme sitede çalışır');
   else senkronDurumYaz('', 'eşitleme bekliyor');
 }
+const GECERLI_KULLANICILAR = ['buse', 'efe', 'affan'];
 function girisYap(){
   // "Buse", "BUSE", " buse " → hepsi "buse" olarak aynı hesaba girer
   const ad = $('#giris-ad').value.replace(/\s+/g, '').toLocaleLowerCase('tr');
-  if (!/^[a-z0-9çğıöşüâ._-]{2,30}$/.test(ad)) {
+  if (GECERLI_KULLANICILAR.indexOf(ad) === -1) {
     $('#giris-hata').classList.add('acik');
     return;
   }
