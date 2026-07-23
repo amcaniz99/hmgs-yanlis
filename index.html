@@ -792,9 +792,9 @@ async function aiDoldur(){
       }
     );
     let yanit = await aiIstek('gemini-2.5-flash');
-    if (yanit.status === 429) {
-      // günlük limit dolduysa daha yüksek limitli yedek modele geç
-      durum.textContent = 'Limit dolmuş, yedek modelle deneniyor…';
+    if (yanit.status === 429 || yanit.status === 404) {
+      // limit dolduysa YA DA bu anahtar ana modele erişemiyorsa yedek modele geç
+      durum.textContent = 'Yedek modelle deneniyor…';
       yanit = await aiIstek('gemini-2.5-flash-lite');
     }
     if (!yanit.ok) {
@@ -802,7 +802,9 @@ async function aiDoldur(){
         ? 'anahtar geçersiz görünüyor, Ayarlar\'dan kontrol et'
         : yanit.status === 429
           ? 'ücretsiz limit (dakikalık olabilir) — 1-2 dakika bekleyip tekrar dene'
-          : 'sunucu hatası (' + yanit.status + ')');
+          : yanit.status === 404
+            ? 'anahtar bu modellere erişemiyor — aistudio.google.com/apikey adresinden YENİ bir anahtar oluşturup Ayarlar\'a kaydet'
+            : 'sunucu hatası (' + yanit.status + ')');
     }
     const veri = await yanit.json();
     let metin = (((veri.candidates || [])[0] || {}).content || {}).parts;
