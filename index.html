@@ -169,7 +169,8 @@ a{color:var(--primary); font-weight:600; word-break:break-all}
 .chip.kotu{background:var(--vurgu-soft); color:var(--vurgu)}
 .grafik-govde{position:relative; height:150px; margin-top:6px}
 .grid-cizgi{position:absolute; left:0; right:0; border-top:1px solid var(--border); opacity:.65; pointer-events:none}
-.grid-etiket{position:absolute; right:0; font-size:9px; font-weight:600; color:var(--muted); background:var(--surface); padding:0 3px; transform:translateY(-55%); pointer-events:none}
+.grid-etiket{position:absolute; left:0; font-size:9px; font-weight:600; color:var(--muted); background:var(--surface); padding:0 3px 0 0; transform:translateY(-55%); pointer-events:none}
+.grid-cizgi.taban{opacity:1}
 .ort-cizgi{position:absolute; left:0; right:26px; border-top:1.5px dashed var(--primary); opacity:.55; pointer-events:none}
 .ort-etiket{position:absolute; right:0; font-size:9.5px; font-weight:700; color:var(--primary); background:var(--primary-soft); padding:1px 5px; border-radius:5px; transform:translateY(-50%); pointer-events:none}
 .gun-bar-alani{position:absolute; inset:0; display:flex; align-items:flex-end; gap:3px}
@@ -1137,12 +1138,23 @@ function renderYorumlar(liste){
   kutu.innerHTML = yorumlar.map(y => `<div class="yorum-kart ${y.tip}">${IKON[y.tip]}<span>${y.metin}</span></div>`).join('');
 }
 
+const AY_KISA = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
 function renderGunluk(){
   const kutu = $('#gunluk-grafik');
   const v = $('#analiz-aralik').value || '*';
-  const gunSayisi = v === '*' ? 30 : Math.max(7, Number(v));   // 7 / 14 / 30 günlük bar
+  let gunSayisi = v === '*' ? 30 : Math.max(7, Number(v));     // 7 / 14 / 30 günlük bar
   const bugun0 = new Date();
   bugun0.setHours(0, 0, 0, 0);
+  // veri kısa süredir birikiyorsa pencereyi daralt: tek kayıtla 30 boş bar gösterme
+  let enEski = null;
+  for (const k of kayitlar) {
+    const d = new Date(k.tarih);
+    if (!isNaN(d) && (!enEski || d < enEski)) enEski = d;
+  }
+  if (enEski) {
+    const kapsam = Math.round((bugun0 - new Date(enEski.getFullYear(), enEski.getMonth(), enEski.getDate())) / 86400000) + 1;
+    gunSayisi = Math.min(gunSayisi, Math.max(7, kapsam));
+  }
   const gunler = [];
   for (let i = gunSayisi - 1; i >= 0; i--) {
     const d = new Date(bugun0);
@@ -1195,20 +1207,27 @@ function renderGunluk(){
     let et = '';
     if (i % etiketAdim === 0 || son) {
       et = son ? 'bugün' : String(g.bas.getDate());
-      if (!son && (i === 0 || g.bas.getDate() <= etiketAdim)) et = g.bas.getDate() + '.' + (g.bas.getMonth() + 1);
+      if (!son && (i === 0 || g.bas.getDate() <= etiketAdim)) et = g.bas.getDate() + ' ' + AY_KISA[g.bas.getMonth()];
     }
     return `<span>${et}</span>`;
   }).join('');
+  // veri azken ortalama çizgisi ve ort rozeti anlamsız — gizle
+  const ortGoster = toplam >= 5;
+  const ortYazi = ort.toLocaleString('tr-TR', { maximumFractionDigits: 1, minimumFractionDigits: ort < 10 ? 1 : 0 });
+  const ilkChip = ortGoster
+    ? `<span class="chip">ort ${ortYazi}/gün</span>`
+    : `<span class="chip">${toplam} yanlış / ${gunSayisi} gün</span>`;
   const ortKonum = Math.min(96, ort / tavan * 100);
   kutu.innerHTML = `<div class="grafik-kart">
     <div class="grafik-ust">
       <span class="grafik-baslik">Günlük yanlış sayısı</span>
-      <span class="chipler"><span class="chip">ort ${ort.toLocaleString('tr-TR', { maximumFractionDigits: 1 })}/gün</span>${trendHTML}</span>
+      <span class="chipler">${ilkChip}${trendHTML}</span>
     </div>
     <div class="grafik-govde">
       <div class="grid-cizgi" style="top:0"></div><span class="grid-etiket" style="top:0">${tavan}</span>
       <div class="grid-cizgi" style="top:50%"></div><span class="grid-etiket" style="top:50%">${tavan / 2}</span>
-      <div class="ort-cizgi" style="bottom:${ortKonum}%"></div><span class="ort-etiket" style="bottom:${ortKonum}%">ort</span>
+      <div class="grid-cizgi taban" style="bottom:0"></div>
+      ${ortGoster ? `<div class="ort-cizgi" style="bottom:${ortKonum}%"></div><span class="ort-etiket" style="bottom:${ortKonum}%">ort</span>` : ''}
       <div class="gun-bar-alani">${barlar}</div>
       <div class="grafik-ipucu" id="grafik-ipucu" hidden></div>
     </div>
