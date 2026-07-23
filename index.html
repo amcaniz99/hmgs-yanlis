@@ -737,6 +737,7 @@ function dersEslestir(ad){
     return n.includes(kisa) || kisa.includes(n);
   }) || '';
 }
+let sonAiCagri = 0;
 async function aiDoldur(){
   const anahtar = aiAnahtar();
   if (!anahtar) {
@@ -748,6 +749,7 @@ async function aiDoldur(){
   const btn = $('#ai-doldur'), durum = $('#ai-durum-form');
   btn.disabled = true;
   durum.textContent = 'Soru okunuyor…';
+  sonAiCagri = Date.now();
   try {
     const parcalar = [{ text: AI_ISTEM }];
     for (const b of bekleyenFotolar.slice(0, 3)) {
@@ -775,7 +777,7 @@ async function aiDoldur(){
       throw new Error(yanit.status === 400 || yanit.status === 403
         ? 'anahtar geçersiz görünüyor, Ayarlar\'dan kontrol et'
         : yanit.status === 429
-          ? 'günlük ücretsiz limit dolmuş olabilir, biraz sonra dene'
+          ? 'ücretsiz limit (dakikalık olabilir) — 1-2 dakika bekleyip tekrar dene'
           : 'sunucu hatası (' + yanit.status + ')');
     }
     const veri = await yanit.json();
@@ -1725,8 +1727,8 @@ function olaylariBagla(){
     }
     $('#foto-btn').disabled = false;
     fotoOnizlemeCiz();
-    // anahtar kayıtlıysa ve ders henüz seçilmediyse otomatik tanı
-    if (aiAnahtar() && !$('#f-ders').value && bekleyenFotolar.length) aiDoldur();
+    // anahtar kayıtlıysa ve ders henüz seçilmediyse otomatik tanı (art arda denemede 20 sn fren)
+    if (aiAnahtar() && !$('#f-ders').value && bekleyenFotolar.length && Date.now() - sonAiCagri > 20000) aiDoldur();
   });
   $('#ai-doldur').addEventListener('click', aiDoldur);
   $('#ai-kaydet').addEventListener('click', () => {
