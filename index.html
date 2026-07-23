@@ -593,20 +593,46 @@ function islem(mod, fn){
     t.onerror = () => rej(t.error);
   });
 }
-const dbEkle    = k  => islem('readwrite', s => s.add(k));
-const dbGuncelle= k  => islem('readwrite', s => s.put(k));
-const dbSil     = id => islem('readwrite', s => s.delete(id));
+// Safari, Blob'u IndexedDB'ye yazarken bazen isimsiz "UnknownError" verir;
+// bu yüzden fotoğraflar ham bayt (ArrayBuffer) olarak saklanır, okunurken Blob'a çevrilir.
+function blobBayt(b){
+  if (b.arrayBuffer) return b.arrayBuffer();
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result);
+    r.onerror = () => rej(r.error);
+    r.readAsArrayBuffer(b);
+  });
+}
+async function fotolariPaketle(k){
+  const kopya = Object.assign({}, k);
+  const paket = [];
+  for (const f of (k.fotolar || [])) {
+    if (f instanceof Blob) paket.push({ tip: f.type || 'image/jpeg', veri: await blobBayt(f) });
+    else if (f && f.veri) paket.push(f);
+  }
+  kopya.fotolar = paket;
+  return kopya;
+}
+function fotolariAc(k){
+  if (k) k.fotolar = (k.fotolar || []).map(f =>
+    f instanceof Blob ? f : new Blob([f.veri], { type: f.tip || 'image/jpeg' }));
+  return k;
+}
+const dbEkle     = async k => { const p = await fotolariPaketle(k); return islem('readwrite', s => s.add(p)); };
+const dbGuncelle = async k => { const p = await fotolariPaketle(k); return islem('readwrite', s => s.put(p)); };
+const dbSil      = id => islem('readwrite', s => s.delete(id));
 function dbGetir(id){
   return new Promise((res, rej) => {
     const istek = db.transaction('kayitlar').objectStore('kayitlar').get(id);
-    istek.onsuccess = () => res(istek.result);
+    istek.onsuccess = () => res(fotolariAc(istek.result));
     istek.onerror = () => rej(istek.error);
   });
 }
 function dbTumu(){
   return new Promise((res, rej) => {
     const istek = db.transaction('kayitlar').objectStore('kayitlar').getAll();
-    istek.onsuccess = () => res(istek.result || []);
+    istek.onsuccess = () => res((istek.result || []).map(fotolariAc));
     istek.onerror = () => rej(istek.error);
   });
 }
@@ -932,7 +958,7 @@ async function kaydet(e){
     await yenile();
     senkronTetikle();
   } catch (err) {
-    toast('Kaydedilemedi: ' + (err && err.message ? err.message : 'bilinmeyen hata'));
+    toast('Kaydedilemedi: ' + ((err && (err.message || err.name)) || 'bilinmeyen hata'));
   } finally {
     btn.disabled = false;
   }
