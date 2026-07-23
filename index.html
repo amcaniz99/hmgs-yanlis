@@ -537,6 +537,30 @@ const DERSLER = [
   'Türk Hukuk Tarihi'
 ];
 
+/* Ders seçilince alt başlık alanında önerilecek standart konu katalogları */
+const ALT_KONULAR = {
+  "Medeni Hukuk": ["Hak ve fiil ehliyeti", "Gaiplik", "Kişilik hakları", "Dernekler ve vakıflar", "Nişanlanma", "Evlenme ve butlan", "Boşanma ve sonuçları", "Mal rejimleri", "Soybağı", "Evlat edinme", "Velayet ve vesayet", "Nafaka", "Yasal mirasçılık", "Saklı pay ve tenkis", "Vasiyetname ve miras sözleşmesi", "Mirasın reddi", "Zilyetlik", "Tapu sicili", "Taşınmaz mülkiyeti", "Kat mülkiyeti", "İrtifak hakları", "Rehin hakları", "İpotek", "Dürüstlük kuralı", "Tüzel kişiler", "Hısımlık", "Paylı ve elbirliği mülkiyeti", "Taşınır mülkiyeti", "Kazandırıcı zamanaşımı", "Ölüme bağlı tasarrufların iptali", "Mirasın paylaşılması"],
+  "Borçlar Hukuku": ["Sözleşmenin kurulması (icap-kabul)", "İrade sakatlıkları (hata, hile, korkutma)", "Aşırı yararlanma (gabin)", "Temsil", "Şekil şartları", "Genel işlem koşulları", "Haksız fiil sorumluluğu", "Kusursuz sorumluluk", "Sebepsiz zenginleşme", "Borçların ifası", "Borçlunun temerrüdü", "Alacaklının temerrüdü", "Müteselsil borçluluk", "Alacağın devri", "Borcun üstlenilmesi", "Zamanaşımı", "Cezai şart", "Satış sözleşmesi", "Kira sözleşmesi", "Eser sözleşmesi", "Vekâlet sözleşmesi", "Kefalet sözleşmesi", "Bağışlama", "Muvazaa", "Vekaletsiz iş görme", "Takas", "İbra", "Sözleşmeden dönme ve fesih", "Adi ortaklık", "Ödünç sözleşmeleri", "Saklama (vedia) sözleşmesi", "Üçüncü kişi yararına sözleşme"],
+  "Medeni Usul Hukuku (HMK)": ["Görev", "Yetki", "Yargı yolu", "Taraf ve dava ehliyeti", "Dava şartları", "İlk itirazlar", "Dava çeşitleri", "Dava dilekçesi ve cevap", "İddia ve savunmanın genişletilmesi yasağı", "Ön inceleme", "İspat yükü", "Senetle ispat", "Tanık", "Bilirkişi ve keşif", "Yemin", "Islah", "Davaya müdahale ve ihbar", "Kesin hüküm", "İstinaf", "Temyiz", "Yargılamanın iadesi", "İhtiyati tedbir", "Tahkim", "Basit yargılama usulü", "Belirsiz alacak davası", "Kısmi dava", "Feragat, kabul ve sulh", "Delil tespiti", "Teminat", "Süreler ve adli tatil", "İsticvap"],
+  "Ticaret Hukuku": ["Tacir sıfatı ve sonuçları", "Ticari işletme", "Ticari iş ve ticari hüküm", "Ticaret unvanı", "Ticaret sicili", "Haksız rekabet", "Ticari defterler", "Cari hesap", "Acentelik", "Kollektif şirket", "Komandit şirket", "Anonim şirket kuruluşu", "Yönetim kurulu", "Genel kurul", "Pay ve pay sahipliği", "Limited şirket", "Birleşme, bölünme, tür değiştirme", "Kıymetli evrak genel hükümler", "Bono", "Poliçe", "Çek", "Ciro", "Sigorta hukuku", "Ticari işlerde faiz", "Taşıma işleri", "Anonim şirkette pay devri", "Şirketin sona ermesi ve tasfiye", "Azlık hakları"],
+  "İcra ve İflas Hukuku": ["İlamsız icra takibi", "Ödeme emri ve itiraz", "İtirazın iptali davası", "İtirazın kaldırılması", "Menfi tespit ve istirdat", "İlamlı icra", "Kambiyo senetlerine özgü takip", "Haciz", "İstihkak davası", "Paraya çevirme (satış)", "Sıra cetveli", "İhtiyati haciz", "İflas yolları", "İflasın sonuçları", "İflas masası", "Konkordato", "Tasarrufun iptali davası", "Şikayet", "İcra suçları", "İhalenin feshi", "Rehnin paraya çevrilmesi yoluyla takip", "Kiralanan taşınmazın tahliyesi", "Borç ödemeden aciz belgesi", "Takibin iptali ve taliki"],
+  "Ceza Hukuku": ["Suçun unsurları", "Kast ve taksir", "Olası kast - bilinçli taksir", "Hukuka uygunluk nedenleri", "Meşru savunma", "Kusurluluğu etkileyen haller", "Yaş küçüklüğü ve akıl hastalığı", "Teşebbüs", "Gönüllü vazgeçme", "İştirak", "İçtima", "Yaptırımlar", "Erteleme", "Dava ve ceza zamanaşımı", "Kasten öldürme", "Taksirle öldürme ve yaralama", "Kasten yaralama", "Hırsızlık", "Yağma", "Dolandırıcılık", "Güveni kötüye kullanma", "Mala zarar verme", "Hakaret", "Belgede sahtecilik", "Zimmet, irtikap, rüşvet", "Haksız tahrik", "Hata (ceza sorumluluğuna etkisi)", "Tehdit ve şantaj", "Kişiyi hürriyetinden yoksun kılma", "Konut dokunulmazlığının ihlali", "Uyuşturucu madde suçları", "İftira", "Görevi kötüye kullanma"],
+  "Ceza Muhakemesi Hukuku (CMK)": ["Soruşturma evresi", "Kovuşturma evresi", "İfade alma ve sorgu", "Gözaltı", "Tutuklama", "Adli kontrol", "Arama ve elkoyma", "İletişimin denetlenmesi", "Şüpheli ve sanık hakları", "Müdafi", "Deliller ve delil yasakları", "İddianame ve iadesi", "Kamu davasının ertelenmesi", "Uzlaştırma", "Seri ve basit yargılama", "Duruşma", "HAGB", "İstinaf", "Temyiz", "Kanun yararına bozma", "Yargılamanın yenilenmesi", "Koruma tedbirleri nedeniyle tazminat", "Yakalama", "Hâkimin reddi ve çekinmesi", "İtiraz kanun yolu", "Bedensel muayene ve keşif"],
+  "Anayasa Hukuku": ["Anayasanın temel ilkeleri", "Hukuk devleti", "Sosyal devlet", "Laiklik", "Eşitlik ilkesi", "Temel hakların sınırlandırılması", "Olağanüstü hal rejimi", "TBMM ve yasama yetkisi", "Milletvekilliği ve dokunulmazlık", "Kanun yapım süreci", "Cumhurbaşkanının görev ve yetkileri", "Cumhurbaşkanlığı kararnamesi", "Yargı bağımsızlığı", "HSK", "Seçimler ve siyasi partiler", "Anayasa değişikliği usulü", "Milletlerarası antlaşmaların onaylanması (m.90)", "TBMM'nin bilgi edinme ve denetim yolları"],
+  "Anayasa Yargısı": ["AYM'nin kuruluşu ve üyeleri", "İptal davası", "Somut norm denetimi (itiraz yolu)", "Şekil ve esas denetimi", "Yürürlüğün durdurulması", "AYM kararlarının niteliği", "Bireysel başvuru şartları", "Bireysel başvuru usulü", "Siyasi parti kapatma", "Yüce Divan"],
+  "İdare Hukuku": ["İdarenin bütünlüğü (hiyerarşi-vesayet)", "Merkezi idare", "Yerinden yönetim", "Belediyeler", "Kamu tüzel kişiliği", "İdari işlemin unsurları", "Yetki unsuru", "İdari işlemin geri alınması ve kaldırılması", "İdari sözleşmeler", "Kamu hizmeti", "Kolluk", "Kamu görevlileri ve disiplin", "Kamu malları", "Kamulaştırma", "Hizmet kusuru", "Kusursuz sorumluluk", "Düzenleyici işlemler", "İdari yaptırımlar", "Yokluk ve butlan", "İdarenin takdir yetkisi"],
+  "İdari Yargılama Usulü (İYUK)": ["İdari yargı teşkilatı", "Görev ve yetki", "İptal davası", "Tam yargı davası", "Dava açma süreleri", "İdari başvurular ve zımni ret", "Yürütmenin durdurulması", "İvedi yargılama usulü", "İstinaf", "Temyiz", "Yargılamanın yenilenmesi", "Kararların uygulanması"],
+  "İş ve Sosyal Güvenlik Hukuku": ["İş sözleşmesi türleri", "Deneme süresi", "İşçi ve işverenin borçları", "Ücret", "Çalışma süreleri ve fazla çalışma", "Yıllık ücretli izin", "Geçerli nedenle fesih", "Haklı nedenle fesih", "İş güvencesi ve işe iade", "Kıdem tazminatı", "İhbar tazminatı", "Sendika üyeliği", "Toplu iş sözleşmesi", "Grev ve lokavt", "İş kazası ve meslek hastalığı", "Hizmet tespiti davası", "Sigortalılık ve primler", "Yaşlılık aylığı", "Alt işveren", "İşyeri devri", "Eşit davranma ilkesi", "Belirli-belirsiz süreli iş sözleşmesi ayrımı"],
+  "Vergi Hukuku": ["Anayasal vergilendirme ilkeleri", "Vergi ödevi ve mükellefiyet", "Vergi sorumlusu", "Vergiyi doğuran olay", "Tarh, tebliğ, tahakkuk, tahsil", "Muafiyet ve istisnalar", "Gelir vergisi", "Kurumlar vergisi", "KDV ve ÖTV", "Vergi borcunu sona erdiren nedenler"],
+  "Vergi Usul Hukuku": ["Vergi ziyaı", "Usulsüzlük ve özel usulsüzlük", "Kaçakçılık suçları", "Pişmanlık ve ıslah", "Uzlaşma", "Cezalarda indirim", "Düzeltme ve şikayet yolu", "Tarh ve tahsil zamanaşımı", "Tebligat usulleri", "Vergi incelemesi ve yoklama", "Takdir komisyonları", "Mücbir sebep"],
+  "Avukatlık Hukuku": ["Avukatlığa kabul şartları", "Avukatlık stajı", "Avukatlıkla birleşemeyen işler", "Avukatın hak ve yükümlülükleri", "Sır saklama yükümlülüğü", "Reklam yasağı", "Avukatlık ücreti", "Avukatlık sözleşmesi", "Disiplin cezaları", "Barolar ve TBB", "CMK görevlendirmesi ve adli yardım", "Uzlaştırma ve arabuluculuk"],
+  "Milletlerarası Hukuk": ["Uluslararası hukukun kaynakları", "Antlaşmalar hukuku", "Çekinceler", "Jus cogens", "Devletin unsurları ve tanıma", "Devletin yetkisi", "Diplomatik ilişkiler ve ayrıcalıklar", "Devletlerin sorumluluğu", "BM ve organları", "Güvenlik Konseyi", "Uluslararası Adalet Divanı", "Deniz hukuku (karasuları, MEB)", "Kuvvet kullanma yasağı", "Uluslararası insancıl hukuk"],
+  "Milletlerarası Özel Hukuk": ["Vasıflandırma", "Bağlama kuralları", "Atıf (renvoi)", "Kamu düzeni müdahalesi", "Doğrudan uygulanan kurallar", "Yabancı hukukun uygulanması", "Ehliyet statüsü", "Evlenme ve boşanmada uygulanacak hukuk", "Miras statüsü", "Sözleşmelere uygulanacak hukuk", "Haksız fiile uygulanacak hukuk", "Milletlerarası yetki", "Tanıma ve tenfiz", "Vatandaşlık hukuku", "Yabancılar hukuku"],
+  "Genel Kamu Hukuku": ["Devlet kavramı ve unsurları", "Egemenlik teorileri", "Devlet biçimleri", "Demokrasi türleri", "Kuvvetler ayrılığı", "Sosyal sözleşme kuramları", "Machiavelli ve modern devlet", "İnsan hakları kuşakları", "Hukuk devleti düşüncesi", "Anayasacılık hareketleri"],
+  "Hukuk Felsefesi ve Sosyolojisi": ["Doğal hukuk", "Hukuki pozitivizm", "Kelsen ve normlar hiyerarşisi", "Hart-Dworkin tartışması", "Tarihçi hukuk okulu", "Sosyolojik hukuk yaklaşımı", "Hukuki realizm", "Adalet teorileri (Rawls)", "Hukuk ve ahlak", "Hukukun işlevleri", "Weber ve hukuk sosyolojisi"],
+  "Türk Hukuk Tarihi": ["İslamiyet öncesi Türk hukuku (töre)", "İslam hukukunun kaynakları", "Örfi hukuk", "Kanunnameler", "Osmanlı yargı teşkilatı (kadılık)", "Fetva ve şeyhülislamlık", "Tanzimat reformları", "Mecelle", "Arazi Kanunnamesi", "Kanun-i Esasi ve meşrutiyet", "Cumhuriyet dönemi hukuk devrimi", "Medeni Kanunun iktibası"]
+};
+
 const MAKS_GENISLIK = 1000;   // px
 const JPEG_KALITE   = 0.75;
 
@@ -879,8 +903,13 @@ function altBaslikOnerileriniGuncelle(){
   const ders = $('#f-ders').value;
   const dl = $('#altbaslik-list');
   dl.innerHTML = '';
+  // önce kendi girdiklerin, sonra o dersin standart konu kataloğu (tekrarsız)
   const kaynak = ders ? kayitlar.filter(k => k.ders === ders) : kayitlar;
-  [...new Set(kaynak.map(k => k.altBaslik).filter(Boolean))].forEach(a => {
+  const kendi = [...new Set(kaynak.map(k => k.altBaslik).filter(Boolean))];
+  const standart = ders ? (ALT_KONULAR[ders] || []) : [];
+  const gorulen = new Set(kendi.map(a => a.toLocaleLowerCase('tr')));
+  const hepsi = kendi.concat(standart.filter(a => !gorulen.has(a.toLocaleLowerCase('tr'))));
+  hepsi.forEach(a => {
     const o = document.createElement('option');
     o.value = a;
     dl.appendChild(o);
@@ -954,7 +983,7 @@ async function kaydet(e){
       toast('Kayıt güncellendi');
     } else {
       await dbEkle(kayit);
-      toast('Yanlış kaydedildi');
+      toast('Kayıt eklendi ✓ (Kayıtlar sekmesinden görebilirsin)');
     }
     formuSifirla(true);
     await yenile();
