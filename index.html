@@ -298,6 +298,15 @@ a{color:var(--primary); font-weight:600; word-break:break-all}
 }
 #toast.acik{opacity:1; transform:translateX(-50%) translateY(0)}
 
+/* ---------- Benzer soru (AI) ---------- */
+.benzer-btn{margin-top:12px; width:100%}
+.benzer-soru{margin-top:12px; background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:14px; text-align:left}
+.benzer-soru .soru-metni{font-size:14.5px; line-height:1.6; margin-bottom:10px; white-space:pre-wrap}
+.benzer-soru .secenek{display:block; width:100%; text-align:left; margin-top:8px; padding:10px 12px; border-radius:10px; border:1px solid var(--border); background:transparent; color:inherit; font-size:13.5px; line-height:1.45; cursor:pointer}
+.benzer-soru .secenek.dogru{border-color:var(--iyi); box-shadow:0 0 0 1px var(--iyi) inset; font-weight:700}
+.benzer-soru .secenek.yanlis{border-color:var(--vurgu); box-shadow:0 0 0 1px var(--vurgu) inset; opacity:.85}
+.benzer-soru .aciklama-kutu{margin-top:12px; padding:10px 12px; border-radius:10px; background:var(--primary-soft); font-size:13px; line-height:1.5}
+
 /* ---------- Giriş & senkron ---------- */
 #giris-ekrani{
   position:fixed; inset:0; z-index:80; display:none; align-items:center; justify-content:center; padding:24px;
@@ -823,6 +832,49 @@ function dersEslestir(ad){
   }) || '';
 }
 let sonAiCagri = 0;
+// Ortak Gemini çağrısı: parça listesi alır, JSON yanıtı döndürür (model yedeğiyle)
+async function aiGonder(parcalar, ilerleme, sicaklik){
+  const anahtar = aiAnahtar();
+  const aiIstek = model => fetch(
+    'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + encodeURIComponent(anahtar),
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: parcalar }],
+        generationConfig: { response_mime_type: 'application/json', temperature: sicaklik == null ? 0.2 : sicaklik }
+      })
+    }
+  );
+  // "latest" takma adları her zaman güncel modele işaret eder — Google eski modelleri
+  // emekliye ayırdığında (2.0 ve 2.5 flash'ta yaşandı) uygulama kırılmaz.
+  const modeller = ['gemini-flash-latest', 'gemini-flash-lite-latest', 'gemini-3.5-flash'];
+  let yanit = null;
+  for (let mi = 0; mi < modeller.length; mi++) {
+    yanit = await aiIstek(modeller[mi]);
+    if (yanit.ok) break;
+    // limit dolduysa, model kapandıysa ya da geçici hata verdiyse sıradaki modele geç
+    if ((yanit.status === 429 || yanit.status === 404 || yanit.status === 503) && mi < modeller.length - 1) {
+      if (ilerleme) ilerleme('Yedek modelle deneniyor…');
+      continue;
+    }
+    break;
+  }
+  if (!yanit.ok) {
+    throw new Error(yanit.status === 400 || yanit.status === 403
+      ? 'anahtar geçersiz görünüyor, Ayarlar\'dan kontrol et'
+      : yanit.status === 429
+        ? 'ücretsiz limit (dakikalık olabilir) — 1-2 dakika bekleyip tekrar dene'
+        : yanit.status === 404
+          ? 'anahtar bu modellere erişemiyor — aistudio.google.com/apikey adresinden YENİ bir anahtar oluşturup Ayarlar\'a kaydet'
+          : 'sunucu hatası (' + yanit.status + ')');
+  }
+  const veri = await yanit.json();
+  let metin = (((veri.candidates || [])[0] || {}).content || {}).parts;
+  metin = metin && metin[0] && metin[0].text ? metin[0].text.trim() : '';
+  if (metin.indexOf('```') === 0) metin = metin.replace(/^```[a-z]*\s*/i, '').replace(/```\s*$/, '');
+  return JSON.parse(metin);
+}
 async function aiDoldur(){
   const anahtar = aiAnahtar();
   if (!anahtar) {
@@ -841,37 +893,7 @@ async function aiDoldur(){
       const d = await blobToDataURL(b);
       parcalar.push({ inline_data: { mime_type: 'image/jpeg', data: d.slice(d.indexOf(',') + 1) } });
     }
-    const aiIstek = model => fetch(
-      'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + encodeURIComponent(anahtar),
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: parcalar }],
-          generationConfig: { response_mime_type: 'application/json', temperature: 0.2 }
-        })
-      }
-    );
-    let yanit = await aiIstek('gemini-2.5-flash');
-    if (yanit.status === 429 || yanit.status === 404) {
-      // limit dolduysa YA DA bu anahtar ana modele erişemiyorsa yedek modele geç
-      durum.textContent = 'Yedek modelle deneniyor…';
-      yanit = await aiIstek('gemini-2.5-flash-lite');
-    }
-    if (!yanit.ok) {
-      throw new Error(yanit.status === 400 || yanit.status === 403
-        ? 'anahtar geçersiz görünüyor, Ayarlar\'dan kontrol et'
-        : yanit.status === 429
-          ? 'ücretsiz limit (dakikalık olabilir) — 1-2 dakika bekleyip tekrar dene'
-          : yanit.status === 404
-            ? 'anahtar bu modellere erişemiyor — aistudio.google.com/apikey adresinden YENİ bir anahtar oluşturup Ayarlar\'a kaydet'
-            : 'sunucu hatası (' + yanit.status + ')');
-    }
-    const veri = await yanit.json();
-    let metin = (((veri.candidates || [])[0] || {}).content || {}).parts;
-    metin = metin && metin[0] && metin[0].text ? metin[0].text.trim() : '';
-    if (metin.indexOf('```') === 0) metin = metin.replace(/^```[a-z]*\s*/i, '').replace(/```\s*$/, '');
-    const s = JSON.parse(metin);
+    const s = await aiGonder(parcalar, m => { durum.textContent = m; }, 0.2);
     const ders = dersEslestir(s.ders);
     if (ders) {
       $('#f-ders').value = ders;
@@ -889,6 +911,79 @@ async function aiDoldur(){
   } finally {
     btn.disabled = false;
   }
+}
+
+/* ---------------- AI: benzer soru üretme (Tekrar görünümü) ---------------- */
+const BENZER_ISTEM =
+  'Fotoğraftaki soru Türkiye HMGS (Hukuk Mesleklerine Giriş Sınavı) tarzı bir hukuk test sorusudur. ' +
+  'Bu soruyla AYNI konuyu ve AYNI ayrımı/tuzağı test eden ama TAMAMEN FARKLI olay örgüsü, kişi adları ve ayrıntılarla ' +
+  'YENİ bir çoktan seçmeli soru yaz. Zorluk düzeyi benzer olsun, 5 seçenek (A-E) ve TEK doğru cevap olsun. ' +
+  'Açıklamada doğru cevabın gerekçesini ve sorunun tuzağını 1-2 cümleyle anlat.\n' +
+  'SADECE şu biçimde geçerli JSON döndür: ' +
+  '{"soru":"...","secenekler":["A) ...","B) ...","C) ...","D) ...","E) ..."],"dogru":"A","aciklama":"..."}';
+async function benzerSoruUret(k, btn, kutu){
+  if (!aiAnahtar()) {
+    toast('Önce Ayarlar sekmesinden ücretsiz AI anahtarını kaydet');
+    gorunumuGoster('yedek');
+    return;
+  }
+  btn.disabled = true;
+  const eskiYazi = btn.textContent;
+  btn.textContent = 'Soru hazırlanıyor…';
+  try {
+    const parcalar = [{ text: BENZER_ISTEM }];
+    if (k.fotolar && k.fotolar.length) {
+      for (const b of k.fotolar.slice(0, 3)) {
+        const d = await blobToDataURL(b);
+        parcalar.push({ inline_data: { mime_type: 'image/jpeg', data: d.slice(d.indexOf(',') + 1) } });
+      }
+    } else {
+      parcalar[0] = { text: BENZER_ISTEM + '\nBu kayıtta fotoğraf yok; soruyu şu bilgilerden üret — Ders: ' +
+        k.ders + ', Konu: ' + (k.altBaslik || 'belirtilmemiş') + ', Not: ' + (k.not || 'yok') };
+    }
+    const s = await aiGonder(parcalar, m => { btn.textContent = m; }, 0.8);
+    if (!s || !s.soru || !Array.isArray(s.secenekler) || !s.secenekler.length) throw new Error('geçersiz yanıt geldi, tekrar dene');
+    benzerSoruCiz(kutu, s);
+    btn.textContent = 'Bir Soru Daha Üret';
+    return;
+  } catch (e) {
+    toast('Soru üretilemedi: ' + e.message);
+    btn.textContent = eskiYazi;
+  } finally {
+    btn.disabled = false;
+  }
+}
+function benzerSoruCiz(kutu, s){
+  kutu.innerHTML = '';
+  const kart = document.createElement('div');
+  kart.className = 'benzer-soru';
+  const soru = document.createElement('p');
+  soru.className = 'soru-metni';
+  soru.textContent = s.soru;
+  kart.appendChild(soru);
+  const dogru = String(s.dogru || '').trim().charAt(0).toLocaleUpperCase('tr');
+  s.secenekler.slice(0, 5).forEach(secMetin => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'secenek';
+    b.textContent = String(secMetin);
+    b.onclick = () => {
+      if (kart.dataset.bitti) return;
+      kart.dataset.bitti = '1';
+      kart.querySelectorAll('.secenek').forEach(x => {
+        if (x.textContent.trim().charAt(0).toLocaleUpperCase('tr') === dogru) x.classList.add('dogru');
+      });
+      const secilen = b.textContent.trim().charAt(0).toLocaleUpperCase('tr');
+      if (secilen !== dogru) b.classList.add('yanlis');
+      const ak = document.createElement('div');
+      ak.className = 'aciklama-kutu';
+      ak.innerHTML = '<b>' + (secilen === dogru ? 'Doğru! 🎉' : 'Doğru cevap: ' + esc(dogru)) + '</b> ' + esc(s.aciklama || '');
+      kart.appendChild(ak);
+    };
+    kart.appendChild(b);
+  });
+  kutu.appendChild(kart);
+  kutu.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
 /* ---------------- Başlatma ---------------- */
@@ -1612,6 +1707,15 @@ function tekrarCiz(){
     <div class="satir"><b>Not</b>${k.not ? esc(k.not) : '<span style="color:var(--muted)">Not girilmemiş</span>'}</div>
     <div class="satir"><b>Deneme / Test</b>${esc(k.deneme || 'Belirtilmemiş')} — ${tarihYaz(k.tarih)}</div>`;
   kart.appendChild(panel);
+  // AI ile aynı konudan yeni soru üretme
+  const benzerBtn = document.createElement('button');
+  benzerBtn.type = 'button';
+  benzerBtn.className = 'buton ikincil benzer-btn';
+  benzerBtn.textContent = '✨ Benzer Soru Üret (AI)';
+  const benzerKutu = document.createElement('div');
+  benzerBtn.onclick = () => benzerSoruUret(k, benzerBtn, benzerKutu);
+  kart.appendChild(benzerBtn);
+  kart.appendChild(benzerKutu);
   $('#tekrar-not').textContent = 'Notu Göster';
   $('#tekrar-onceki').disabled = tekrarIndex === 0;
   $('#tekrar-sonraki').textContent = tekrarIndex === tekrarDeste.length - 1 ? 'Bitti' : 'Sonraki';
