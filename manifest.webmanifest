@@ -3,10 +3,18 @@
   "short_name": "HMGS",
   "start_url": ".",
   "display": "standalone",
-  "background_color": "#f7f5fb",
-  "theme_color": "#6d28d9",
+  "background_color": "#f6f4fc",
+  "theme_color": "#7c3aed",
   "icons": [
-    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" }
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
   ]
 }

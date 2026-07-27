@@ -8,6 +8,29 @@ import { getStore } from '@netlify/blobs';
 //                                      (uid bazında, guncelleme'si yeni olan kazanır), sonuç döner
 
 const IZINLI_KULLANICILAR = new Set(['buse', 'efe', 'affan']);
+// İlk sürümde ad serbest yazılabiliyordu; eski adla buluta yüklenmiş veri varsa yeni ada taşınır
+const ESKI_ADLAR = { buse: 'buse_hmgs' };
+
+async function eskiHesabiTasi(store, kullanici){
+  const eski = ESKI_ADLAR[kullanici];
+  if (!eski) return;
+  const eskiMetin = await store.get('meta/' + eski);
+  if (!eskiMetin) return;
+  const eskiVeri = JSON.parse(eskiMetin);
+  const metin = await store.get('meta/' + kullanici);
+  const veri = metin ? JSON.parse(metin) : { kayitlar: [] };
+  const birlesim = new Map();
+  for (const k of (veri.kayitlar || [])) if (k && k.uid) birlesim.set(k.uid, k);
+  for (const k of (eskiVeri.kayitlar || [])) {
+    if (!k || !k.uid) continue;
+    const m = birlesim.get(k.uid);
+    if (!m || (k.guncelleme || '') > (m.guncelleme || '')) birlesim.set(k.uid, k);
+  }
+  // ayarlarda eski hesabınki öncelikli: yeni addaki anahtar yanlış hesaptan sızmış olabilir
+  const ayarlar = Object.assign({}, veri.ayarlar || {}, eskiVeri.ayarlar || {});
+  await store.set('meta/' + kullanici, JSON.stringify({ kayitlar: [...birlesim.values()], ayarlar }));
+  await store.delete('meta/' + eski);
+}
 const KULLANICI_DESENI = /^[a-z0-9çğıöşüâ._-]{2,30}$/;
 const FOTO_DESENI = /^[A-Za-z0-9_-]{1,80}$/;
 
@@ -32,12 +55,17 @@ export default async (req) => {
       return Response.json({ tamam: true });
     }
     if (req.method === 'GET') {
-      const veri = await store.get(anahtar);
+      let veri = await store.get(anahtar);
+      // eski hesap adıyla yüklenmiş fotoğraflara da bakılır (kopyalamadan, yerinde okur)
+      if (!veri && ESKI_ADLAR[kullanici]) {
+        veri = await store.get('foto/' + ESKI_ADLAR[kullanici] + '/' + foto);
+      }
       return Response.json({ veri: veri || null });
     }
     return new Response('yöntem desteklenmiyor', { status: 405 });
   }
 
+  await eskiHesabiTasi(store, kullanici);
   const metaAnahtar = 'meta/' + kullanici;
 
   if (req.method === 'GET') {
@@ -66,6 +94,7 @@ export default async (req) => {
     if (gelen.ayarlar && typeof gelen.ayarlar === 'object') {
       for (const [alan, deger] of Object.entries(gelen.ayarlar)) {
         if (deger) ayarlar[alan] = deger;
+        else if (deger === null) delete ayarlar[alan]; // açıkça null gelirse ayar buluttan silinir
       }
     }
     const sonuc = { kayitlar: [...birlesim.values()], ayarlar };
