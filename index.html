@@ -576,7 +576,16 @@ let senkronDevam = false, senkronZamanlayici = null;
 const API_YOLU = '/api/senkron';
 const KULLANICI_ANAHTARI = 'hmgs-kullanici';
 function kullanici(){
-  try { return (localStorage.getItem(KULLANICI_ANAHTARI) || '').trim(); } catch (e) { return ''; }
+  // Eski sürümden kalmış geçersiz bir ad varsa (örn. "buse_hmgs") yok say ve temizle;
+  // böylece giriş ekranı yeniden açılır ve geçerli adla girilince kayıtlar buluta yüklenir.
+  try {
+    const u = (localStorage.getItem(KULLANICI_ANAHTARI) || '').trim().toLocaleLowerCase('tr');
+    if (u && GECERLI_KULLANICILAR.indexOf(u) === -1) {
+      localStorage.removeItem(KULLANICI_ANAHTARI);
+      return '';
+    }
+    return u;
+  } catch (e) { return ''; }
 }
 function uidUret(){
   return (window.crypto && crypto.randomUUID)
@@ -854,6 +863,17 @@ async function init(){
       await dbGuncelle(k);
     }
   }
+  // eski sürümden kalma "buse_hmgs" hesabını "buse"ye taşı (tek seferlik geçiş):
+  // ad düzeltilir, tüm kayıtlar fotoğraflarıyla birlikte buluta yeniden yüklenecek şekilde işaretlenir
+  try {
+    const eskiAd = (localStorage.getItem(KULLANICI_ANAHTARI) || '').trim().toLocaleLowerCase('tr');
+    if (eskiAd === 'buse_hmgs') {
+      localStorage.setItem(KULLANICI_ANAHTARI, 'buse');
+      localStorage.setItem('hmgs-son-kullanici', 'buse');
+      for (const k of hepsi) { k.bekliyor = true; await dbGuncelle(k); }
+      toast('Hesabın "buse" olarak düzeltildi, kayıtların buluta yükleniyor');
+    }
+  } catch (e) {}
   await yenile();
   $('#f-tarih').value = bugunLocal();
   olaylariBagla();
@@ -1667,6 +1687,7 @@ async function senkronla(manuel){
       for (let i = 0; i < (k.fotolar || []).length; i++) {
         const d = await blobToDataURL(k.fotolar[i]);
         const y = await fetch(API_YOLU + '?kullanici=' + u + '&foto=' + encodeURIComponent(k.uid + '-' + i), { method: 'PUT', body: d });
+        if (y.status === 403) throw new Error('kullanici-gecersiz');
         if (!y.ok) throw new Error('fotoğraf yüklenemedi');
       }
     }
@@ -1684,6 +1705,7 @@ async function senkronla(manuel){
         ayarlar: aiAnahtar() ? { aiAnahtar: aiAnahtar() } : {}
       })
     });
+    if (yanit.status === 403) throw new Error('kullanici-gecersiz');
     if (!yanit.ok) throw new Error('sunucu hatası (' + yanit.status + ')');
     const birlesik = await yanit.json();
     // AI anahtarı hesapla birlikte gezsin: bulutta varsa ve bu cihazda yoksa al
@@ -1730,8 +1752,13 @@ async function senkronla(manuel){
     senkronDurumYaz('tamam', 'eşitlendi ' + new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }));
     if (manuel) toast('Eşitleme tamamlandı');
   } catch (e) {
-    senkronDurumYaz('sorun', 'çevrimdışı');
-    if (manuel) toast('Eşitlenemedi: ' + e.message);
+    if (e.message === 'kullanici-gecersiz') {
+      senkronDurumYaz('sorun', 'kullanıcı adı tanımlı değil');
+      toast('Bu kullanıcı adı sunucuda tanımlı değil. Çıkış yapıp geçerli bir adla (örn. "buse") tekrar giriş yap.');
+    } else {
+      senkronDurumYaz('sorun', 'çevrimdışı');
+      if (manuel) toast('Eşitlenemedi: ' + e.message);
+    }
   } finally {
     senkronDevam = false;
   }
