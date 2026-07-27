@@ -721,6 +721,8 @@ function dbTumu(){
 function esc(s){
   return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
+// Bir kayıtta birden çok soru fotoğrafı olabilir: istatistiklerde 1 kayıt = foto sayısı kadar yanlış (foto yoksa 1)
+function soruSayisi(k){ return Math.max(1, (k.fotolar || []).length); }
 function yeniURL(blob){ const u = URL.createObjectURL(blob); objURLs.push(u); return u; }
 function urlleriTemizle(){ objURLs.forEach(u => URL.revokeObjectURL(u)); objURLs = []; }
 function tarihYaz(iso){
@@ -950,7 +952,10 @@ async function init(){
 async function yenile(){
   kayitlar = (await dbTumu()).filter(k => !k.silindi);
   kayitlar.sort((a, b) => (b.tarih || '').localeCompare(a.tarih || '') || b.id - a.id);
-  $('#toplam-rozet').textContent = kayitlar.length + ' kayıt';
+  const rozetSoru = kayitlar.reduce((t, k) => t + soruSayisi(k), 0);
+  $('#toplam-rozet').textContent = rozetSoru !== kayitlar.length
+    ? kayitlar.length + ' kayıt · ' + rozetSoru + ' soru'
+    : kayitlar.length + ' kayıt';
   denemeOnerileriniGuncelle();
   altBaslikOnerileriniGuncelle();
 }
@@ -1165,15 +1170,15 @@ function renderOzetSatiri(){
   for (const k of kayitlar) {
     const d = new Date(k.tarih);
     if (isNaN(d)) continue;
-    if (yerelGun(k.tarih) === bugun) bugunSayi++;
-    if (d >= esik) haftaSayi++;
+    if (yerelGun(k.tarih) === bugun) bugunSayi += soruSayisi(k);
+    if (d >= esik) haftaSayi += soruSayisi(k);
   }
   const ikon = (yol, renk) => `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="color:${renk}">${yol}</svg>`;
   const kutucuk = (sayi, ad, ik) => `<div class="ozet-kutu">${ik}<span class="sayi">${sayi}</span><span class="ad">${ad}</span></div>`;
   $('#ozet-satiri').innerHTML =
     kutucuk(bugunSayi, 'Bugün', ikon('<path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>', 'var(--vurgu)')) +
     kutucuk(haftaSayi, 'Son 7 gün', ikon('<path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/>', 'var(--primary)')) +
-    kutucuk(kayitlar.length, 'Toplam', ikon('<path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/>', 'var(--iyi)'));
+    kutucuk(kayitlar.reduce((t, k) => t + soruSayisi(k), 0), 'Toplam', ikon('<path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/>', 'var(--iyi)'));
 }
 
 /* gün sayısına göre kayıt say (bugünden geriye) */
@@ -1188,8 +1193,8 @@ function sonGunSayisi(gun, kaydir){
   for (const k of kayitlar) {
     const d = new Date(k.tarih);
     if (isNaN(d) || d < baslangic || d > bitis) continue;
-    toplam++;
-    sayilar.set(k.ders, (sayilar.get(k.ders) || 0) + 1);
+    toplam += soruSayisi(k);
+    sayilar.set(k.ders, (sayilar.get(k.ders) || 0) + soruSayisi(k));
   }
   return { toplam, sayilar };
 }
@@ -1209,13 +1214,14 @@ function renderYorumlar(liste){
 
   // Genel durum
   const dersSayi = new Map();
-  liste.forEach(k => dersSayi.set(k.ders, (dersSayi.get(k.ders) || 0) + 1));
-  yorumlar.push({ tip: 'bilgi', metin: `Bu dönemde <b>${liste.length} yanlış</b> kaydettin, ${dersSayi.size} farklı derse dağılıyor.` });
+  liste.forEach(k => dersSayi.set(k.ders, (dersSayi.get(k.ders) || 0) + soruSayisi(k)));
+  const toplamSoru = liste.reduce((t, k) => t + soruSayisi(k), 0);
+  yorumlar.push({ tip: 'bilgi', metin: `Bu dönemde <b>${toplamSoru} yanlış</b> kaydettin, ${dersSayi.size} farklı derse dağılıyor.` });
 
   // En zayıf ders + o dersin en sorunlu alt başlığı
   const [enDers, enSayi] = [...dersSayi.entries()].sort((a, b) => b[1] - a[1])[0];
   const altSayi = new Map();
-  liste.forEach(k => { if (k.ders === enDers && k.altBaslik) altSayi.set(k.altBaslik, (altSayi.get(k.altBaslik) || 0) + 1); });
+  liste.forEach(k => { if (k.ders === enDers && k.altBaslik) altSayi.set(k.altBaslik, (altSayi.get(k.altBaslik) || 0) + soruSayisi(k)); });
   const enAlt = [...altSayi.entries()].sort((a, b) => b[1] - a[1])[0];
   yorumlar.push({ tip: 'uyari', metin: `En zayıf dersin <b>${esc(enDers)}</b> (${enSayi} yanlış)` +
     (enAlt && enAlt[1] > 1 ? ` — özellikle <b>${esc(enAlt[0])}</b> konusu (${enAlt[1]} yanlış).` : '.') });
@@ -1225,7 +1231,7 @@ function renderYorumlar(liste){
   liste.forEach(k => {
     if (!k.altBaslik) return;
     const anahtar = k.ders + ' › ' + k.altBaslik;
-    ciftSayi.set(anahtar, (ciftSayi.get(anahtar) || 0) + 1);
+    ciftSayi.set(anahtar, (ciftSayi.get(anahtar) || 0) + soruSayisi(k));
   });
   const enCift = [...ciftSayi.entries()].sort((a, b) => b[1] - a[1])[0];
   if (enCift && enCift[1] >= 3) {
@@ -1255,7 +1261,7 @@ function renderYorumlar(liste){
     if (!k.deneme) continue;
     if (!denemeler.has(k.deneme)) denemeler.set(k.deneme, { sayi: 0, ilk: k.tarih || '' });
     const g = denemeler.get(k.deneme);
-    g.sayi++;
+    g.sayi += soruSayisi(k);
     if ((k.tarih || '') < g.ilk) g.ilk = k.tarih || '';
   }
   if (denemeler.size >= 3) {
@@ -1312,8 +1318,8 @@ function renderGunluk(){
     if (isNaN(d)) continue;
     const g = new Date(d.getFullYear(), d.getMonth(), d.getDate());
     const fark = Math.round((g - gunler[0].bas) / 86400000);
-    if (fark >= 0 && fark < gunSayisi) gunler[fark].sayi++;
-    else if (fark < 0 && g >= oncekiBas) oncekiToplam++;
+    if (fark >= 0 && fark < gunSayisi) gunler[fark].sayi += soruSayisi(k);
+    else if (fark < 0 && g >= oncekiBas) oncekiToplam += soruSayisi(k);
   }
   const toplam = gunler.reduce((t, g) => t + g.sayi, 0);
   if (!toplam && !oncekiToplam) {
@@ -1399,9 +1405,9 @@ function renderDenemeOzet(){
     const ad = k.deneme || '(kaynak belirtilmemiş)';
     if (!gruplar.has(ad)) gruplar.set(ad, { sayi: 0, ilk: k.tarih || '', dersler: new Map() });
     const g = gruplar.get(ad);
-    g.sayi++;
+    g.sayi += soruSayisi(k);
     if ((k.tarih || '') < g.ilk) g.ilk = k.tarih || '';
-    g.dersler.set(k.ders, (g.dersler.get(k.ders) || 0) + 1);
+    g.dersler.set(k.ders, (g.dersler.get(k.ders) || 0) + soruSayisi(k));
   }
   const sirali = [...gruplar.entries()].sort((a, b) => (b[1].ilk).localeCompare(a[1].ilk));
   kutu.innerHTML = sirali.map(([ad, g]) => {
@@ -1425,9 +1431,9 @@ function renderKonular(liste){
   for (const k of liste) {
     if (!ozet.has(k.ders)) ozet.set(k.ders, { toplam: 0, altlar: new Map() });
     const d = ozet.get(k.ders);
-    d.toplam++;
+    d.toplam += soruSayisi(k);
     const ab = k.altBaslik || '(alt başlık girilmemiş)';
-    d.altlar.set(ab, (d.altlar.get(ab) || 0) + 1);
+    d.altlar.set(ab, (d.altlar.get(ab) || 0) + soruSayisi(k));
   }
   const sirali = [...ozet.entries()].sort((a, b) => b[1].toplam - a[1].toplam);
   const enCok = sirali[0][1].toplam;
