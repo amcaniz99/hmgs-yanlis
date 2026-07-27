@@ -1744,14 +1744,28 @@ async function senkronla(manuel){
   const u = encodeURIComponent(kullanici());
   try {
     const tumu = await dbTumu();
-    // 1) bekleyen kayıtların fotoğraflarını yükle
+    // 1) bekleyen kayıtların fotoğraflarını yükle.
+    // Tek bir foto takılsa bile senkron DURMASIN: sunucu limitini aşan (eski sürümden kalma
+    // sıkıştırılmamış) foto önce küçültülür; yine olmazsa atlanır, kayıt "bekliyor" kalır ve
+    // sonraki eşitlemede yeniden denenir. Kayıt listesi her durumda gönderilir.
     const bekleyenler = tumu.filter(k => k.bekliyor);
+    const fotoSorunlu = new Set();
     for (const k of bekleyenler) {
       for (let i = 0; i < (k.fotolar || []).length; i++) {
-        const d = await blobToDataURL(k.fotolar[i]);
-        const y = await fetch(API_YOLU + '?kullanici=' + u + '&foto=' + encodeURIComponent(k.uid + '-' + i), { method: 'PUT', body: d });
-        if (y.status === 403) throw new Error('kullanici-gecersiz');
-        if (!y.ok) throw new Error('fotoğraf yüklenemedi');
+        try {
+          let d = await blobToDataURL(k.fotolar[i]);
+          if (d.length > 3800000) {
+            k.fotolar[i] = await sikistir(k.fotolar[i]);
+            d = await blobToDataURL(k.fotolar[i]);
+            await dbGuncelle(k);
+          }
+          const y = await fetch(API_YOLU + '?kullanici=' + u + '&foto=' + encodeURIComponent(k.uid + '-' + i), { method: 'PUT', body: d });
+          if (y.status === 403) throw new Error('kullanici-gecersiz');
+          if (!y.ok) throw new Error('fotoğraf yüklenemedi');
+        } catch (e) {
+          if (e.message === 'kullanici-gecersiz') throw e;
+          fotoSorunlu.add(k.uid);
+        }
       }
     }
     // 2) meta listesini sunucuyla birleştir
@@ -1800,8 +1814,10 @@ async function senkronla(manuel){
       if (l) { yeni.id = l.id; await dbGuncelle(yeni); } else { await dbEkle(yeni); }
       degisti = true;
     }
-    // 4) yüklenenlerin bekliyor işaretini kaldır (bu arada düzenlenmediyse)
+    // 4) yüklenenlerin bekliyor işaretini kaldır (bu arada düzenlenmediyse);
+    // fotoğrafı eksik yüklenenler "bekliyor" kalır ki sonraki eşitlemede yeniden denensin
     for (const k of bekleyenler) {
+      if (fotoSorunlu.has(k.uid)) continue;
       const guncel = await dbGetir(k.id);
       if (guncel && guncel.guncelleme === k.guncelleme) {
         guncel.bekliyor = false;
@@ -1814,8 +1830,13 @@ async function senkronla(manuel){
       else if (aktifGorunum === 'kayitlar') renderKayitlar();
       else if (aktifGorunum === 'yedek') renderYedekBilgi();
     }
-    senkronDurumYaz('tamam', 'eşitlendi ' + new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }));
-    if (manuel) toast('Eşitleme tamamlandı');
+    if (fotoSorunlu.size) {
+      senkronDurumYaz('sorun', fotoSorunlu.size + ' kaydın fotoğrafı yüklenemedi');
+      if (manuel) toast('Kayıtlar eşitlendi ama ' + fotoSorunlu.size + ' kaydın fotoğrafı yüklenemedi — sonraki eşitlemede yeniden denenecek');
+    } else {
+      senkronDurumYaz('tamam', 'eşitlendi ' + new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }));
+      if (manuel) toast('Eşitleme tamamlandı');
+    }
   } catch (e) {
     if (e.message === 'kullanici-gecersiz') {
       senkronDurumYaz('sorun', 'kullanıcı adı tanımlı değil');
