@@ -306,6 +306,10 @@ a{color:var(--primary); font-weight:600; word-break:break-all}
 .benzer-soru .secenek.dogru{border-color:var(--iyi); box-shadow:0 0 0 1px var(--iyi) inset; font-weight:700}
 .benzer-soru .secenek.yanlis{border-color:var(--vurgu); box-shadow:0 0 0 1px var(--vurgu) inset; opacity:.85}
 .benzer-soru .aciklama-kutu{margin-top:12px; padding:10px 12px; border-radius:10px; background:var(--primary-soft); font-size:13px; line-height:1.5}
+.benzer-secim{margin-top:12px}
+.benzer-kucukler{display:flex; flex-wrap:wrap; gap:8px; margin-top:8px}
+.benzer-kucukler img{width:72px; height:72px; object-fit:cover; border-radius:10px; border:2px solid var(--border); cursor:pointer}
+.benzer-kucukler img:active{border-color:var(--primary)}
 
 /* ---------- Giriş & senkron ---------- */
 #giris-ekrani{
@@ -536,10 +540,14 @@ nav{
 <div id="giris-ekrani">
   <div class="giris-kart">
     <h2>HMGS Yanlış Takip</h2>
-    <p>Kullanıcı adınla gir; kayıtların buluta yedeklenir ve telefonla bilgisayar arasında otomatik eşitlenir. Şifre yok — başkalarının tahmin edemeyeceği bir ad seç.</p>
+    <p>Kullanıcı adın ve şifrenle gir; kayıtların buluta yedeklenir ve telefonla bilgisayar arasında otomatik eşitlenir.</p>
     <div class="alan">
       <label for="giris-ad">Kullanıcı adı</label>
       <input type="text" id="giris-ad" placeholder="kullanıcı adın" autocomplete="off" autocapitalize="none" spellcheck="false">
+    </div>
+    <div class="alan">
+      <label for="giris-sifre">Şifre</label>
+      <input type="password" id="giris-sifre" placeholder="şifren" autocomplete="off">
       <div class="hata-mesaj" id="giris-hata">Bu kullanıcı adı tanımlı değil.</div>
     </div>
     <button type="button" class="buton" id="giris-btn">Giriş Yap</button>
@@ -816,10 +824,11 @@ function aiAnahtar(){
   try { return (localStorage.getItem(aiAnahtarAdi()) || '').trim(); } catch (e) { return ''; }
 }
 const AI_ISTEM =
-  'Bu fotoğraf(lar) Türkiye HMGS (Hukuk Mesleklerine Giriş Sınavı) tarzı bir hukuk test sorusudur. ' +
-  'Görevin:\n1) Soruyu şu ders listesinden TAM OLARAK birine ata: ' + DERSLER.join('; ') + '.\n' +
-  '2) Sorunun test ettiği konuyu 2-5 kelimelik kısa bir alt başlık olarak Türkçe yaz (örn: "Zamanaşımı", "Taşınmaz satış vaadi").\n' +
-  '3) Sorunun test ettiği ayrımı veya tipik tuzağı tek kısa cümleyle "not" olarak yaz.\n' +
+  'Bu fotoğraf(lar) Türkiye HMGS (Hukuk Mesleklerine Giriş Sınavı) tarzı hukuk test soruları içeriyor. ' +
+  'DİKKAT: Birden fazla fotoğraf verildiyse her fotoğraf AYRI bir soru olabilir — kararlarını HEPSİNE bakarak ver.\n' +
+  'Görevin:\n1) Soruları şu ders listesinden TAM OLARAK birine ata (hepsine uyan ortak dersi seç): ' + DERSLER.join('; ') + '.\n' +
+  '2) Alt başlık: tek soru varsa test ettiği konuyu 2-5 kelimeyle yaz (örn: "Zamanaşımı"); birden çok soru varsa ortak konuyu, ortak konu yoksa en baskın 1-2 konuyu virgülle ayırarak yaz (örn: "Zamanaşımı, Takas").\n' +
+  '3) Not: soruların test ettiği ayrımı/tipik tuzağı 1-2 kısa cümleyle yaz; birden çok soru varsa ortak ya da en önemli tuzağı seç.\n' +
   'SADECE şu biçimde geçerli JSON döndür: {"ders":"...","altBaslik":"...","not":"..."}';
 function dersEslestir(ad){
   if (!ad) return '';
@@ -888,10 +897,22 @@ async function aiDoldur(){
   durum.textContent = 'Soru okunuyor…';
   sonAiCagri = Date.now();
   try {
+    // En çok 20 foto ve ~15MB (Gemini istek limiti 20MB) — sığmayanlar atlanır, kullanıcıya söylenir
     const parcalar = [{ text: AI_ISTEM }];
-    for (const b of bekleyenFotolar.slice(0, 3)) {
+    let toplamBoyut = 0, okunan = 0;
+    for (const b of bekleyenFotolar) {
+      if (okunan >= 20) break;
       const d = await blobToDataURL(b);
-      parcalar.push({ inline_data: { mime_type: 'image/jpeg', data: d.slice(d.indexOf(',') + 1) } });
+      const veri = d.slice(d.indexOf(',') + 1);
+      if (toplamBoyut + veri.length > 15 * 1024 * 1024) break;
+      toplamBoyut += veri.length;
+      okunan++;
+      parcalar.push({ inline_data: { mime_type: 'image/jpeg', data: veri } });
+    }
+    if (bekleyenFotolar.length > 1) {
+      durum.textContent = okunan < bekleyenFotolar.length
+        ? bekleyenFotolar.length + ' fotoğraftan ilk ' + okunan + ' tanesi okunuyor (boyut sınırı)…'
+        : okunan + ' fotoğraf birlikte okunuyor…';
     }
     const s = await aiGonder(parcalar, m => { durum.textContent = m; }, 0.2);
     const ders = dersEslestir(s.ders);
@@ -921,10 +942,15 @@ const BENZER_ISTEM =
   'Açıklamada doğru cevabın gerekçesini ve sorunun tuzağını 1-2 cümleyle anlat.\n' +
   'SADECE şu biçimde geçerli JSON döndür: ' +
   '{"soru":"...","secenekler":["A) ...","B) ...","C) ...","D) ...","E) ..."],"dogru":"A","aciklama":"..."}';
-async function benzerSoruUret(k, btn, kutu){
+async function benzerSoruUret(k, btn, kutu, fotoIndex){
   if (!aiAnahtar()) {
     toast('Önce Ayarlar sekmesinden ücretsiz AI anahtarını kaydet');
     gorunumuGoster('yedek');
+    return;
+  }
+  // bir kayıtta birden çok soru fotoğrafı olabilir — hangisinden üretileceğini kullanıcı seçsin
+  if (k.fotolar && k.fotolar.length > 1 && fotoIndex == null) {
+    benzerFotoSec(k, btn, kutu);
     return;
   }
   btn.disabled = true;
@@ -933,10 +959,8 @@ async function benzerSoruUret(k, btn, kutu){
   try {
     const parcalar = [{ text: BENZER_ISTEM }];
     if (k.fotolar && k.fotolar.length) {
-      for (const b of k.fotolar.slice(0, 3)) {
-        const d = await blobToDataURL(b);
-        parcalar.push({ inline_data: { mime_type: 'image/jpeg', data: d.slice(d.indexOf(',') + 1) } });
-      }
+      const d = await blobToDataURL(k.fotolar[fotoIndex == null ? 0 : fotoIndex]);
+      parcalar.push({ inline_data: { mime_type: 'image/jpeg', data: d.slice(d.indexOf(',') + 1) } });
     } else {
       parcalar[0] = { text: BENZER_ISTEM + '\nBu kayıtta fotoğraf yok; soruyu şu bilgilerden üret — Ders: ' +
         k.ders + ', Konu: ' + (k.altBaslik || 'belirtilmemiş') + ', Not: ' + (k.not || 'yok') };
@@ -952,6 +976,27 @@ async function benzerSoruUret(k, btn, kutu){
   } finally {
     btn.disabled = false;
   }
+}
+function benzerFotoSec(k, btn, kutu){
+  kutu.innerHTML = '';
+  const sec = document.createElement('div');
+  sec.className = 'benzer-secim';
+  const bilgi = document.createElement('p');
+  bilgi.className = 'aciklama';
+  bilgi.textContent = 'Bu kayıtta ' + k.fotolar.length + ' soru fotoğrafı var — hangisinden benzer soru üretilsin?';
+  sec.appendChild(bilgi);
+  const sira = document.createElement('div');
+  sira.className = 'benzer-kucukler';
+  k.fotolar.forEach((blob, i) => {
+    const im = document.createElement('img');
+    im.src = yeniURL(blob);
+    im.alt = 'Soru ' + (i + 1);
+    im.onclick = () => benzerSoruUret(k, btn, kutu, i);
+    sira.appendChild(im);
+  });
+  sec.appendChild(sira);
+  kutu.appendChild(sec);
+  kutu.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 function benzerSoruCiz(kutu, s){
   kutu.innerHTML = '';
@@ -1819,14 +1864,24 @@ function hesapArayuz(){
   else senkronDurumYaz('', 'eşitleme bekliyor');
 }
 const GECERLI_KULLANICILAR = ['buse', 'efe', 'affan'];
+// Yanlışlıkla başkasının hesabına girilmesin diye basit şifre koruması
+const SIFRELER = { buse: 'eren53', efe: 'kastamonu37', affan: 'deneme1907' };
 function girisYap(){
   // "Buse", "BUSE", " buse " → hepsi "buse" olarak aynı hesaba girer
   const ad = $('#giris-ad').value.replace(/\s+/g, '').toLocaleLowerCase('tr');
+  const hata = $('#giris-hata');
   if (GECERLI_KULLANICILAR.indexOf(ad) === -1) {
-    $('#giris-hata').classList.add('acik');
+    hata.textContent = 'Bu kullanıcı adı tanımlı değil.';
+    hata.classList.add('acik');
     return;
   }
-  $('#giris-hata').classList.remove('acik');
+  if ($('#giris-sifre').value.trim() !== SIFRELER[ad]) {
+    hata.textContent = 'Şifre yanlış.';
+    hata.classList.add('acik');
+    return;
+  }
+  $('#giris-sifre').value = '';
+  hata.classList.remove('acik');
   const onceki = localStorage.getItem('hmgs-son-kullanici');
   if (onceki && onceki !== ad && kayitlar.length &&
       !confirm(`Bu cihazda "${onceki}" adına ${kayitlar.length} kayıt var. "${ad}" ile girersen bu kayıtlar o hesapla BİRLEŞİR. Devam edilsin mi?`)) {
@@ -2010,7 +2065,8 @@ function olaylariBagla(){
   $('#tekrar-bitir').addEventListener('click', () => tekrarBitir(false));
 
   $('#giris-btn').addEventListener('click', girisYap);
-  $('#giris-ad').addEventListener('keydown', e => { if (e.key === 'Enter') girisYap(); });
+  $('#giris-ad').addEventListener('keydown', e => { if (e.key === 'Enter') $('#giris-sifre').focus(); });
+  $('#giris-sifre').addEventListener('keydown', e => { if (e.key === 'Enter') girisYap(); });
   $('#giris-atla').addEventListener('click', () => {
     try { localStorage.setItem('hmgs-girissiz', '1'); } catch (e) {}
     $('#giris-ekrani').classList.remove('acik');
